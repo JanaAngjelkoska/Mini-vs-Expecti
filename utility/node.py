@@ -11,8 +11,9 @@ class PositionNode:
     def __init__(self, root: Optional[Board] = Board()):
         """
         Constructor for a PositionNode.
-            :param root: A predefined root checkpoint (position) to start building upon. By default, this is the starting
-                         position in a chess board defined by the FEN: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+            :param root: A predefined root checkpoint (position) to start building upon. By default, this is the
+            starting position in a chess board defined by the FEN:
+            'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         """
         self.board = Board(root.fen())
         self.children = set()
