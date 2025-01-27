@@ -77,7 +77,7 @@ class IsolatedPawns(Heuristic):
                 isolated += 1
                 continue
 
-        return isolated * -1
+        return isolated * -0.8
 
 
 class PassedPawns(Heuristic):
@@ -140,7 +140,7 @@ class BishopAttacks(Heuristic):
                  if board.piece_at(sq) is not None and board.piece_at(sq).color == adversary_color]
             )
 
-        return score
+        return score * 0.5
 
 
 class BishopPair(Heuristic):
@@ -148,7 +148,7 @@ class BishopPair(Heuristic):
         Heuristic that detects if the Bishop pair is present for the current player.
     """
     def estimate(self, board: Board, color: Color) -> float:
-        return 2 if len(board.pieces(BISHOP, color)) == 2 else 0
+        return 2.5 if len(board.pieces(BISHOP, color)) == 2 else 0
 
 class KingSafety(Heuristic):
 
@@ -174,7 +174,7 @@ class KingSafety(Heuristic):
             if square_distance(king_square, sq) <= 1:
                 attacked_squares.append(-1 * len(board.attackers(adversary_color, sq)))
 
-        return sum(attacked_squares)
+        return sum(attacked_squares) * 1.2
 
 class Checkmate(Heuristic):
 
@@ -212,13 +212,13 @@ class OpenRook(Heuristic):
 
             open_rooks[rook] = 1 if is_open else 0
 
-        return sum(open_rooks.values()) * 1
+        return sum(open_rooks.values()) * 1.2
 
 class PieceMobility(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
         copy = Board(board.fen())
         copy.turn = color
-        return len(list(board.legal_moves)) * 1
+        return len(list(board.legal_moves)) * 0.5
 
 class Material(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
@@ -250,7 +250,7 @@ class CenterControl(Heuristic):
             attackers = board.attackers(color, sq)
             center_grasp_score += 1 * len(attackers)
 
-        return center_grasp_score
+        return center_grasp_score * 0.75
 
 class EarlyQueenPenalty(Heuristic):
 
@@ -269,7 +269,7 @@ class EarlyQueenPenalty(Heuristic):
             curr_q_sq = q
 
         if curr_q_sq != queen_square:
-            return -5
+            return -3
 
         return 0
 
@@ -283,31 +283,31 @@ class PieceInactivity(Heuristic):
             current_piece = board.piece_at(sq)
             initial_piece = initial_board.piece_at(sq)
 
-            # Check if the current piece matches the initial piece and is of the specified color
             if current_piece == initial_piece and current_piece is not None and current_piece.color == color:
                 count += 1
 
-        return count * -1
+        return count * -0.5
 
 class EvaluationEngine:
 
     move_no = 1
 
     weight_map = {
+        # todo: make weights better :D :p
         Material: 0.4,
-        PassedPawns: 0.07,
-        KingSafety: 0.12,
-        EarlyQueenPenalty: 0.05,
-        PieceMobility: 0.08,
-        CenterControl: 0.07,
-        BishopPair: 0.03,
-        OpenRook: 0.02,
-        BishopAttacks: 0.03,
+        PassedPawns: 0.12,
+        KingSafety: 0.15,
+        EarlyQueenPenalty: 0.08,
+        PieceMobility: 0.07,
+        CenterControl: 0.06,
+        BishopPair: 0.04,
+        OpenRook: 0.03,
+        BishopAttacks: 0.02,
         DoubledPawns: 0.02,
         IsolatedPawns: 0.02,
-        PieceInactivity: 0.09,
+        PieceInactivity: 0.05,
         Checkmate: 1.0,
-        Stalemate: 0.0,
+        Stalemate: 1.0,
     }
 
     transposition_table = dict()
@@ -344,7 +344,7 @@ class EvaluationEngine:
         update_indices = []
 
         for ind, w in enumerate(weight_vector):
-            if w != 0.9:
+            if w != 1:
                 update_indices.append(ind)
 
         to_scale = weight_vector[update_indices]
@@ -388,4 +388,3 @@ class EvaluationEngine:
         black_score = np.dot(self.weightvec, evaluation_vec_black)
 
         return white_score - black_score
-
