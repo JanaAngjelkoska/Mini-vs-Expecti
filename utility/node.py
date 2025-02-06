@@ -1,12 +1,13 @@
-from chess import Board, PseudoLegalMoveGenerator
+from chess import Board, LegalMoveGenerator
 
 from typing import Set, Optional
 
-from node_exceptions import NoChildrenCalculatedYetException
+from utility.node_exceptions import NoChildrenCalculatedYetException
 
-class PositionNode:
+class PositionNode(object):
     """
-        A single unit, or state (a.k.a. node) in a chess search tree.
+        A single unit, or state (a.k.a. node) in a chess search tree. This class is only illustrative, to demonstrate
+        how chess positions and combinations after each move work.
     """
     def __init__(self, root: Optional[Board] = Board()):
         """
@@ -17,7 +18,10 @@ class PositionNode:
         """
         self.board = Board(root.fen())
         self.children = set()
-        self.generator = PseudoLegalMoveGenerator(self.board)
+        self.generator = LegalMoveGenerator(self.board)
+
+    def next_moves(self):
+        return self.generator
 
     def calculate_children(self) -> Set['PositionNode']:
         """

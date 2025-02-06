@@ -1,20 +1,21 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
 from chess import *
 from sklearn.preprocessing import MinMaxScaler
 
-import numpy as np
-
-
 class Heuristic(ABC):
+
     """
-    Functional interface to implement for a heuristic.
+        Functional interface to implement for a heuristic.
     """
 
     @abstractmethod
     def estimate(self, board: Board, color: Color) -> float:
         """
             A function that estimates the position, given 1 heuristic to estimate on.
+
+            Arguments:
             :param board: An arbitrary board state.
             :param color: The color for which the evaluation is executed.
             :return: An integer estimate of the position given the heuristic.
@@ -41,6 +42,7 @@ class DoubledPawns(Heuristic):
     """
         Heuristic for calculating a doubled pawns penalty.
     """
+
     def estimate(self, board: Board, color: Color) -> float:
         pawns = board.pieces(PAWN, color)
 
@@ -48,7 +50,7 @@ class DoubledPawns(Heuristic):
 
         for pawn in pawns:
             column = ord(square_name(pawn)[0]) - ord('a')
-            columns[column] += 1
+            columns[column] += 0.7
 
         return -np.sum(columns)
 
@@ -77,13 +79,14 @@ class IsolatedPawns(Heuristic):
                 isolated += 1
                 continue
 
-        return isolated * -0.8
+        return -isolated
 
 
 class PassedPawns(Heuristic):
     """
         Heuristic for calculating a passed pawns reward.
     """
+
     def estimate(self, board: Board, color: Color) -> float:
 
         adversary_color = not color
@@ -93,14 +96,16 @@ class PassedPawns(Heuristic):
 
         passed = PassedPawns.__check_passed(check_for=has_pawn_for_col, check_against=has_pawn_against_col)
 
-        return passed * 1
+        return passed * 1.5
 
     @staticmethod
     def __check_passed(check_for: np.ndarray[int], check_against: np.ndarray[int]) -> float:
         """
-        Helper function for detecting pawn presence (bool -> there or not there) in columns.
-            :param check_for: Indexed array of columns (0 -> a, 1 -> b, ..., 7 -> h) of the current player's pawn presence.
-            :param check_against: Indexed array of columns (0 -> a, 1 -> b, ..., 7 -> h)
+            Helper function for detecting pawn presence (bool -> there or not there) in columns.
+
+            Arguments:
+            :param check_for: Indexed array of columns (0->a, 1->b, ..., 7->h) of the current player's pawn presence.
+            :param check_against: Indexed array of columns (0->a, 1->b, ..., 7->h)
                                     of the adversary's pawn presence.
             :return: Number of current player's passwed pawns.
         """
@@ -125,6 +130,7 @@ class BishopAttacks(Heuristic):
     """
         Heuristic for detecting how much control a bishop has over opponents.
     """
+
     def estimate(self, board: Board, color: Color) -> float:
         bishop_squares = board.pieces(BISHOP, color)
 
@@ -140,18 +146,19 @@ class BishopAttacks(Heuristic):
                  if board.piece_at(sq) is not None and board.piece_at(sq).color == adversary_color]
             )
 
-        return score * 0.5
+        return score * 0.6
 
 
 class BishopPair(Heuristic):
     """
         Heuristic that detects if the Bishop pair is present for the current player.
     """
+
     def estimate(self, board: Board, color: Color) -> float:
-        return 2.5 if len(board.pieces(BISHOP, color)) == 2 else 0
+        return 2 if len(board.pieces(BISHOP, color)) == 2 else 0
+
 
 class KingSafety(Heuristic):
-
     """
         Heuristic that detects how safe the current player's king is, based on how many squares around the king are attacked.
     """
@@ -174,17 +181,7 @@ class KingSafety(Heuristic):
             if square_distance(king_square, sq) <= 1:
                 attacked_squares.append(-1 * len(board.attackers(adversary_color, sq)))
 
-        return sum(attacked_squares) * 1.2
-
-class Checkmate(Heuristic):
-
-    def estimate(self, board: Board, color: Color) -> float:
-        return np.inf if board.is_checkmate() else 0
-
-class Stalemate(Heuristic):
-
-    def estimate(self, board: Board, color: Color) -> float:
-        return 0 if board.is_stalemate() else -np.inf
+        return sum(attacked_squares) * 1.5
 
 class OpenRook(Heuristic):
 
@@ -214,31 +211,32 @@ class OpenRook(Heuristic):
 
         return sum(open_rooks.values()) * 1.2
 
+
 class PieceMobility(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
         copy = Board(board.fen())
         copy.turn = color
         return len(list(board.legal_moves)) * 0.5
 
+
 class Material(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
 
         piece_values = {
-            PAWN:   1,
-            KNIGHT: 3,
-            BISHOP: 3,
-            ROOK:   5,
-            QUEEN:  9,
+            PAWN: 100,
+            KNIGHT: 300,
+            BISHOP: 300,
+            ROOK: 500,
+            QUEEN: 900,
         }
 
         material_count = 0
 
         for piece_type in piece_values.keys():
-            white_pieces = board.pieces(piece_type, color)
-
-            material_count += len(white_pieces) * piece_values[piece_type]
+            material_count += EvaluationEngine.piece_presence[color][piece_type] * piece_values[piece_type]
 
         return material_count
+
 
 class CenterControl(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
@@ -251,6 +249,7 @@ class CenterControl(Heuristic):
             center_grasp_score += 1 * len(attackers)
 
         return center_grasp_score * 0.75
+
 
 class EarlyQueenPenalty(Heuristic):
 
@@ -269,9 +268,10 @@ class EarlyQueenPenalty(Heuristic):
             curr_q_sq = q
 
         if curr_q_sq != queen_square:
-            return -3
+            return -2.5
 
         return 0
+
 
 class PieceInactivity(Heuristic):
 
@@ -286,29 +286,54 @@ class PieceInactivity(Heuristic):
             if current_piece == initial_piece and current_piece is not None and current_piece.color == color:
                 count += 1
 
-        return count * -0.5
+        return count * -0.6
+
 
 class EvaluationEngine:
 
+    # === Static Attributes === #
     move_no = 1
 
-    weight_map = {
+    piece_presence = {
+        BLACK: {
+            BISHOP: 2,
+            KNIGHT: 2,
+            QUEEN: 1,
+            ROOK: 1,
+            PAWN: 8,
+        },
+
+        WHITE: {
+            BISHOP: 2,
+            KNIGHT: 2,
+            QUEEN: 1,
+            ROOK: 1,
+            PAWN: 8,
+        }
+    }
+
+    operation_stack = []
+
+    weight_map_open = {
         # todo: make weights better :D :p
-        Material: 0.4,
+        Material: 0.39,
         PassedPawns: 0.12,
-        KingSafety: 0.15,
-        EarlyQueenPenalty: 0.08,
+        KingSafety: 0.14,
+        EarlyQueenPenalty: 0.05,
         PieceMobility: 0.07,
         CenterControl: 0.06,
         BishopPair: 0.04,
         OpenRook: 0.03,
         BishopAttacks: 0.02,
-        DoubledPawns: 0.02,
+        DoubledPawns: 0.01,
         IsolatedPawns: 0.02,
-        PieceInactivity: 0.05,
-        Checkmate: 1.0,
-        Stalemate: 1.0,
+        PieceInactivity: 0.02,
     }
+
+    # todo: construct weight maps for middle and end games
+    weight_map_mid = {}
+
+    weight_map_end = {}
 
     transposition_table = dict()
 
@@ -321,13 +346,11 @@ class EvaluationEngine:
         self.weights = None
 
         all_heuristics = Heuristic.__subclasses__()
-        all_heuristics.remove(Stalemate)
 
         if not heuristics:
             self.heuristics_use = list(map(lambda h: h(), all_heuristics))
         else:
             self.heuristics_use = [*heuristics]
-            self.heuristics_use += [Checkmate()]
 
         self.weightvec = self.__build_weight_vector()
 
@@ -339,52 +362,49 @@ class EvaluationEngine:
         """
         weight_vector = np.empty_like(self.heuristics_use)
         for i, heuristic in enumerate(self.heuristics_use):
-            weight_vector[i] = EvaluationEngine.weight_map[type(heuristic)]
+            weight_vector[i] = EvaluationEngine.weight_map_open[type(heuristic)]
 
-        update_indices = []
+        scaler = MinMaxScaler(feature_range=
+            (
+            np.min(weight_vector),
+            np.max(weight_vector)
+            )
+        )
 
-        for ind, w in enumerate(weight_vector):
-            if w != 1:
-                update_indices.append(ind)
-
-        to_scale = weight_vector[update_indices]
-
-        scaler = MinMaxScaler(feature_range=(min(to_scale), max(to_scale)))
-        scaled = scaler.fit_transform(to_scale.reshape(-1, 1)).flatten()
+        scaled = scaler.fit_transform(weight_vector.reshape(-1, 1)).flatten()
         scaled = scaled / np.sum(scaled)
 
-        weight_vector[update_indices] = scaled
-
-        return weight_vector
+        return scaled
 
     def evaluate_position(self, board: Board) -> float:
         """
-        Evaluation of any board position/state. A positive result is an advantage for white, the converse is an
-        advantage for black. A win for white is given by np.inf, while -np.inf is a win for black.
-        A zero evalution is a draw.
+            Evaluation of any board position/state. A positive result is an advantage for white, the converse is an
+            advantage for black. A win for white is given by np.inf, while -np.inf is a win for black.
+            A zero evalution is a draw.
+
+            Parameters:
             :param board: An arbitrary board state.
             :return: Inner product of the evaluation for white minus the inner product of the evaluation for black.
         """
 
-        stale_score = Stalemate().estimate(board, board.turn)
-
-        if stale_score == 0:
-            return stale_score
-
-        evaluation_vec_white = np.array(
-            list(map(lambda h: h.estimate(board, WHITE), self.heuristics_use))
-        )
+        evaluation_vec_white = np.array([h.estimate(board, WHITE) for h in self.heuristics_use])
+        evaluation_vec_black = np.array([h.estimate(board, BLACK) for h in self.heuristics_use])
 
         white_score = np.dot(self.weightvec, evaluation_vec_white)
-
-        if white_score == np.inf:
-            checkmate_info = np.inf if board.turn == BLACK else -np.inf
-            return checkmate_info
-
-        evaluation_vec_black = np.array(
-            list(map(lambda h: h.estimate(board, BLACK), self.heuristics_use))
-        )
-
         black_score = np.dot(self.weightvec, evaluation_vec_black)
 
         return white_score - black_score
+
+    @staticmethod
+    def update_piececounts_after(board: Board, move: Move) -> None:
+        piece = board.piece_at(move.to_square)
+
+        if piece is not None:
+            EvaluationEngine.piece_presence[piece.color][piece.piece_type] -= 1
+            EvaluationEngine.operation_stack.append((piece.color, piece.piece_type))
+
+    @staticmethod
+    def undo_piececounts_last():
+        if len(EvaluationEngine.operation_stack) != 0:
+            undo = EvaluationEngine.operation_stack.pop()
+            EvaluationEngine.piece_presence[undo[0]][undo[1]] += 1
