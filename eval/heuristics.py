@@ -4,8 +4,8 @@ import numpy as np
 from chess import *
 from sklearn.preprocessing import MinMaxScaler
 
-class Heuristic(ABC):
 
+class Heuristic(ABC):
     """
         Functional interface to implement for a heuristic.
     """
@@ -183,6 +183,7 @@ class KingSafety(Heuristic):
 
         return sum(attacked_squares) * 1.5
 
+
 class OpenRook(Heuristic):
 
     def estimate(self, board: Board, color: Color) -> float:
@@ -221,7 +222,6 @@ class PieceMobility(Heuristic):
 
 class Material(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
-
         piece_values = {
             PAWN: 100,
             KNIGHT: 300,
@@ -240,15 +240,21 @@ class Material(Heuristic):
 
 class CenterControl(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
-        central_squares = SquareSet([E4, E5, D4, D5])
-
+        central_squares = {E4, E5, D4, D5}
         center_grasp_score = 0
+        pawns = board.pieces(PAWN, color)
 
         for sq in central_squares:
             attackers = board.attackers(color, sq)
-            center_grasp_score += 1 * len(attackers)
+            center_grasp_score += 0.5 * len(attackers)
+
+    # higher reward if there are pawns on the central squares
+        for pawn in pawns:
+            if pawn in central_squares:
+                center_grasp_score += 1
 
         return center_grasp_score * 0.75
+
 
 
 class EarlyQueenPenalty(Heuristic):
@@ -286,11 +292,51 @@ class PieceInactivity(Heuristic):
             if current_piece == initial_piece and current_piece is not None and current_piece.color == color:
                 count += 1
 
-        return count * -0.6
+        return count * -1
+
+
+class WeakAttackers(Heuristic):
+
+    def estimate(self, board: Board, color: Color) -> float:
+
+        pieces = {
+            PAWN: 1,
+            KNIGHT: 3,
+            BISHOP: 3,
+            ROOK: 5,
+            QUEEN: 9,
+        }
+
+        attacker_color = not color
+        legal_moves = list(board.legal_moves)
+
+        attacker_moves = [move for move in legal_moves if board.color_at(move.from_square) == attacker_color]
+        attacker_squares = [str(move)[-2:] for move in attacker_moves]
+        all_pieces_to_check = board.occupied_co[color]
+
+        attacked_by = 0
+
+        for move, square in zip(attacker_moves, attacker_squares):
+            board.push(move)
+            attacker_piece = board.piece_at(parse_square(square))
+
+            attacked_squares = int(board.attacks(parse_square(square)))
+            attacked_pieces = list(SquareSet(all_pieces_to_check & attacked_squares))
+
+            attacker_piece_type = attacker_piece.piece_type
+            for attacked_square in attacked_pieces:
+                attacked_piece_at_square = board.piece_at(attacked_square)
+                attacked_piece_type = attacked_piece_at_square.piece_type
+
+                if pieces.get(attacker_piece_type, 0) < pieces.get(attacked_piece_type, 0):
+                    attacked_by += 1
+                    print(square, " CAN ATTACK ", attacked_square)
+
+            board.pop()
+        return -attacked_by
 
 
 class EvaluationEngine:
-
     # === Static Attributes === #
     move_no = 1
 
@@ -316,24 +362,51 @@ class EvaluationEngine:
 
     weight_map_open = {
         # todo: make weights better :D :p
-        Material: 0.39,
-        PassedPawns: 0.12,
-        KingSafety: 0.14,
-        EarlyQueenPenalty: 0.05,
-        PieceMobility: 0.07,
-        CenterControl: 0.06,
+        Material: 0.8,
+        PassedPawns: 0.01,
+        KingSafety: 0.1,
+        EarlyQueenPenalty: 0.5,
+        PieceMobility: 0.5,
+        CenterControl: 0.3,
         BishopPair: 0.04,
-        OpenRook: 0.03,
-        BishopAttacks: 0.02,
+        OpenRook: 0.0,
+        BishopAttacks: 0.01,
         DoubledPawns: 0.01,
         IsolatedPawns: 0.02,
-        PieceInactivity: 0.02,
+        PieceInactivity: 0.4,
+        WeakAttackers: 0.6
     }
 
     # todo: construct weight maps for middle and end games
-    weight_map_mid = {}
-
-    weight_map_end = {}
+    # weight_map_mid = {
+    #     Material: 0.50,
+    #     PassedPawns: 0.15,
+    #     KingSafety: 0.20,
+    #     PieceMobility: 0.15,
+    #     CenterControl: 0.1,
+    #     BishopPair: 0.04,
+    #     OpenRook: 0.05,
+    #     BishopAttacks: 0.05,
+    #     DoubledPawns: 0.03,
+    #     IsolatedPawns: 0.05,
+    #     PieceInactivity: 0.1,
+    #     WeakAttackers: 0.2
+    # }
+    #
+    # weight_map_end = {
+    #     Material: 0.50,
+    #     PassedPawns: 0.3,
+    #     KingSafety: 0.20,
+    #     PieceMobility: 0.3,
+    #     CenterControl: 0.05,
+    #     BishopPair: 0.1,
+    #     OpenRook: 0.1,
+    #     BishopAttacks: 0.1,
+    #     DoubledPawns: 0.2,
+    #     IsolatedPawns: 0.2,
+    #     PieceInactivity: 0.1,
+    #     WeakAttackers: 0.2
+    # }
 
     transposition_table = dict()
 
@@ -365,10 +438,10 @@ class EvaluationEngine:
             weight_vector[i] = EvaluationEngine.weight_map_open[type(heuristic)]
 
         scaler = MinMaxScaler(feature_range=
-            (
+        (
             np.min(weight_vector),
             np.max(weight_vector)
-            )
+        )
         )
 
         scaled = scaler.fit_transform(weight_vector.reshape(-1, 1)).flatten()
