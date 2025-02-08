@@ -181,7 +181,7 @@ class KingSafety(Heuristic):
             if square_distance(king_square, sq) <= 1:
                 attacked_squares.append(-1 * len(board.attackers(adversary_color, sq)))
 
-        return sum(attacked_squares) * 1.5
+        return sum(attacked_squares)
 
 
 class OpenRook(Heuristic):
@@ -210,24 +210,24 @@ class OpenRook(Heuristic):
 
             open_rooks[rook] = 1 if is_open else 0
 
-        return sum(open_rooks.values()) * 1.2
+        return sum(open_rooks.values())
 
 
 class PieceMobility(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
         copy = Board(board.fen())
         copy.turn = color
-        return len(list(board.legal_moves)) * 0.5
+        return len(list(board.legal_moves))
 
 
 class Material(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
         piece_values = {
-            PAWN: 100,
-            KNIGHT: 300,
-            BISHOP: 300,
-            ROOK: 500,
-            QUEEN: 900,
+            PAWN: 1,
+            KNIGHT: 3,
+            BISHOP: 3,
+            ROOK: 5,
+            QUEEN: 9,
         }
 
         material_count = 0
@@ -248,13 +248,12 @@ class CenterControl(Heuristic):
             attackers = board.attackers(color, sq)
             center_grasp_score += 0.5 * len(attackers)
 
-    # higher reward if there are pawns on the central squares
+        # higher reward if there are pawns on the central squares
         for pawn in pawns:
             if pawn in central_squares:
                 center_grasp_score += 1
 
         return center_grasp_score * 0.75
-
 
 
 class EarlyQueenPenalty(Heuristic):
@@ -274,7 +273,29 @@ class EarlyQueenPenalty(Heuristic):
             curr_q_sq = q
 
         if curr_q_sq != queen_square:
-            return -2.5
+            return -5
+
+        return 0
+
+
+class EarlyKingPenalty(Heuristic):
+
+    def estimate(self, board: Board, color: Color) -> float:
+
+        king_square = D1 if color == WHITE else D8
+
+        kings = board.pieces(KING, color)
+
+        if EvaluationEngine.move_no > 7:
+            return 0
+
+        curr_k_sq = None
+
+        for q in kings:
+            curr_k_sq = q
+
+        if square_distance(curr_k_sq, king_square) == 1:
+            return -10
 
         return 0
 
@@ -293,6 +314,16 @@ class PieceInactivity(Heuristic):
                 count += 1
 
         return count * -1
+
+
+class Checkmate(Heuristic):
+    def estimate(self, board: Board, color: Color) -> float:
+        if board.is_checkmate():
+            if board.turn == color:
+                return float('-inf')
+            else:
+                return float('inf')
+        return 0
 
 
 class WeakAttackers(Heuristic):
@@ -365,16 +396,18 @@ class EvaluationEngine:
         Material: 0.8,
         PassedPawns: 0.01,
         KingSafety: 0.1,
+        EarlyKingPenalty: 0.6,
         EarlyQueenPenalty: 0.5,
         PieceMobility: 0.5,
-        CenterControl: 0.3,
+        CenterControl: 0.2,
         BishopPair: 0.04,
         OpenRook: 0.0,
         BishopAttacks: 0.01,
-        DoubledPawns: 0.01,
-        IsolatedPawns: 0.02,
+        DoubledPawns: 0.4,
+        IsolatedPawns: 0.4,
         PieceInactivity: 0.4,
-        WeakAttackers: 0.6
+        WeakAttackers: 0.6,
+        Checkmate: 1
     }
 
     # todo: construct weight maps for middle and end games
