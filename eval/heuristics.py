@@ -316,14 +316,14 @@ class PieceInactivity(Heuristic):
         return count * -1
 
 
-class Checkmate(Heuristic):
-    def estimate(self, board: Board, color: Color) -> float:
-        if board.is_checkmate():
-            if board.turn == color:
-                return float('-inf')
-            else:
-                return float('inf')
-        return 0
+# class Checkmate(Heuristic):
+#     def estimate(self, board: Board, color: Color) -> float:
+#         if board.is_checkmate():
+#             if board.turn == color:
+#                 return float('-inf')
+#             else:
+#                 return float('inf')
+#         return 0
 
 
 class WeakAttackers(Heuristic):
@@ -361,7 +361,7 @@ class WeakAttackers(Heuristic):
 
                 if pieces.get(attacker_piece_type, 0) < pieces.get(attacked_piece_type, 0):
                     attacked_by += 1
-                    print(square, " CAN ATTACK ", attacked_square)
+                    # print(square, " CAN ATTACK ", attacked_square)
 
             board.pop()
         return -attacked_by
@@ -407,7 +407,7 @@ class EvaluationEngine:
         IsolatedPawns: 0.4,
         PieceInactivity: 0.4,
         WeakAttackers: 0.6,
-        Checkmate: 1
+        # Checkmate: 1
     }
 
     # todo: construct weight maps for middle and end games
