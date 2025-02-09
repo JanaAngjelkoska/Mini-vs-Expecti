@@ -2,9 +2,6 @@ import time
 
 from eval.heuristics import *
 from utility.ordering import Ordering
-from chess import *
-from typing import Tuple, Optional
-import numpy as np
 
 
 class Algorithm(ABC):
@@ -14,52 +11,34 @@ class Algorithm(ABC):
 
     def __init__(self, eval_engine: EvaluationEngine):
         self.eval_engine = eval_engine
+        pass
 
     @abstractmethod
-    def execute(self, cur_depth: int, max_depth: int, white_turn: bool, alpha: Optional[float], beta: Optional[float],
-                board: Board) -> Tuple[float, Optional[Move]]:
-        """
-            A function allowing an adversarial search algorithm to calculate a move to play.
-
-            Arguments:
-            :param cur_depth: The depth that the algorithm starts from.
-            :param max_depth: The depth that the algorithm searches until.
-            :param white_turn: The current player's turn.
-            :param alpha: Parameter used by the maximizer (player wanting to maximize the score - White). Used
-                          primarily in Minimax optimization and NOT meant to be used directly in other algorithms.
-            :param beta: Parameter used by the minimizer (player wanting to minimize the score - Black). Used
-                          primarily in Minimax optimization and NOT meant to be used directly in other algorithms.
-            :param board: A board state that we are starting to search from.
-            :return: A tuple, the first element being the evaluation estimate, the second being the move to play next.
-        """
+    def execute(self, cur_depth: int, max_depth: int, white_turn: bool, alpha: float, beta: float, board: Board) \
+            -> Tuple[float, Optional[Move], Board]:
         pass
 
 
 class Minimax(Algorithm):
 
-    TT = dict()
-
     def __init__(self, eval_engine: EvaluationEngine):
         super().__init__(eval_engine)
 
-    def execute(self, cur_depth: int, max_depth: int, white_turn: bool, alpha: float, beta: float, board: Board) \
-        -> Tuple[float, Optional[Move]]:
-
-        if board.legal_moves.count() == 0:
-            if board.is_check():  # checkmate
-                return -np.inf if white_turn else np.inf, None
-            else:  # stalemate
-                return 0, None
+    def execute(self, cur_depth: int, max_depth: int, white_turn: bool, alpha: float, beta: float, board: Board) -> \
+            Tuple[float, Optional[Move]]:
 
         fen_parts = board.fen().split(' ')
-        fen_hash = ' '.join(fen_parts[:4])
+        relevant_fen = ' '.join(fen_parts[:4])
 
-        if fen_hash in EvaluationEngine.transposition_table:
-            score, depth, best_move = Minimax.TT[fen_hash]
+        if board.is_checkmate():
+            return (np.inf if white_turn else -np.inf), None
+
+        if relevant_fen in EvaluationEngine.transposition_table:
+            score, depth, best_move = EvaluationEngine.transposition_table[relevant_fen]
             if cur_depth <= depth:
                 return score, best_move
 
-        if cur_depth == max_depth:
+        if cur_depth == max_depth or board.is_stalemate():
             return self.eval_engine.evaluate_position(board), None
 
         best_move = None
@@ -83,7 +62,10 @@ class Minimax(Algorithm):
                     break
 
             Ordering.update_history_heuristic(best_move, cur_depth)
-            Minimax.cache_result(fen_hash, max_eval, best_move, cur_depth)
+            if relevant_fen in EvaluationEngine.transposition_table:
+                tt_eval, tt_depth, tt_best_move = EvaluationEngine.transposition_table[relevant_fen]
+                if cur_depth >= tt_depth:
+                    EvaluationEngine.transposition_table[relevant_fen] = (max_eval, cur_depth, best_move)
 
             return max_eval, best_move
 
@@ -106,64 +88,58 @@ class Minimax(Algorithm):
                     break
 
             Ordering.update_history_heuristic(best_move, cur_depth)
-            Minimax.cache_result(fen_hash, min_eval, best_move, cur_depth)
+            if relevant_fen in EvaluationEngine.transposition_table:
+                tt_eval, tt_depth, tt_best_move = EvaluationEngine.transposition_table[relevant_fen]
+                if cur_depth >= tt_depth:
+                    EvaluationEngine.transposition_table[relevant_fen] = (min_eval, cur_depth, best_move)
 
             return min_eval, best_move
 
-    @staticmethod
-    def cache_result(key, ev, move, dep):
-        if key in Minimax.TT:
-            tt_eval, tt_depth, tt_best_move = Minimax.TT[key]
-            if dep < tt_depth:
-                return
-
-        Minimax.TT[key] = (ev, dep, move)
-
 
 # Example Usage - todo: remove in future
-board_init = Board('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+board = Board('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
 
 algo = Minimax(EvaluationEngine())
 
-while not board_init.is_checkmate() and not board_init.is_stalemate():
+while not board.is_checkmate() and not board.is_stalemate():
     print('% % % % % % % %')
-    print(board_init)
+    print(board)
     print('% % % % % % % %\n')
 
     # User's turn
     while True:
         start = time.time()
-        m = input("Your move (in SAN): ").strip()
+        move = input("Your move (in SAN): ").strip()
         print(f"You took {time.time() - start:.2f}s")
         try:
-            EvaluationEngine.update_piececounts_after(board_init, Move.from_uci(m))
-            board_init.push_san(m)
+            EvaluationEngine.update_piececounts_after(board, Move.from_uci(move))
+            board.push_san(move)
             break
         except ValueError:
             print("Invalid move.")
 
-    if board_init.is_checkmate():
+    if board.is_checkmate():
         print("Checkmate for white.")
         break
-    elif board_init.is_stalemate():
+    elif board.is_stalemate():
         print("Stalemate.")
         break
 
     print("Algorithm's turn...")
     start = time.time()
-    evaluation, m = algo.execute(0, 4, False, -np.inf, np.inf, board_init)
+    evalscore, move = algo.execute(0, 4, False, -np.inf, np.inf, board)
     print(len(EvaluationEngine.transposition_table.keys()))
-    print(m)
-    EvaluationEngine.update_piececounts_after(board_init, m)
-    board_init.push(m)
+    print(move)
+    EvaluationEngine.update_piececounts_after(board, move)
+    board.push(move)
     print(f"Opponent took {time.time() - start:.2f}s")
 
-    if board_init.is_checkmate():
+    if board.is_checkmate():
         print("Checkmate for black.")
         break
-    elif board_init.is_stalemate():
+    elif board.is_stalemate():
         print("Draw.")
         break
 
-    print(f"Evaluation: {evaluation:.2f}")
+    print(f"Evaluation: {evalscore:.2f}")
     EvaluationEngine.move_no += 1
