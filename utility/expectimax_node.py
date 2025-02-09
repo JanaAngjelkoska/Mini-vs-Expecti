@@ -3,7 +3,7 @@ from typing import Set, Tuple, Optional
 
 
 class ExpectimaxNode(object):
-    def init(self, board: Optional[Board] = Board(), parent_type: Optional[str] = "max"):
+    def __init__(self, board: Optional[Board] = Board(), parent_type: Optional[str] = "max"):
         """
         Constructor for an ExpectimaxNode.
         :param board: The board representing the current position.
@@ -22,7 +22,7 @@ class ExpectimaxNode(object):
         total_moves = len(legal_moves)
 
         if total_moves == 0:
-            return set()
+            return set()  # No legal moves (game over or stalemate)
 
         move_probabilities = []
         for move in legal_moves:
@@ -30,12 +30,10 @@ class ExpectimaxNode(object):
             child_board.push(move)
 
             probability = 1.0 / total_moves
-            type = "min" if self.parent_type == "max" else "max"
-
-            child_node = ExpectimaxNode(child_board, type)
+            child_node = ExpectimaxNode(child_board, "min" if self.parent_type == "max" else "max")
             move_probabilities.append((child_node, probability))
 
         return set(move_probabilities)
 
-    def str(self) -> str:
-        return f'{self.board.str()}'
+    def __str__(self) -> str:
+        return f'{self.board.__str__()}'
