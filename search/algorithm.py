@@ -1,25 +1,26 @@
-import time
-
 from eval.heuristics import *
 from utility.ordering import Ordering
 from chess import *
 from typing import Tuple, Optional
+
 import numpy as np
+import time
 
-
-class Algorithm(ABC):
+class Minimax:
     """
-        An interface to implement to define a specific adversarial search algorithm.
+        The minimax adversarial search algorithm.
     """
 
-    def __init__(self, eval_engine: EvaluationEngine):
-        self.eval_engine = eval_engine
+    # A Transposition Table, used to memoize evaluations of positions we have already seen
+    TT = dict()
 
-    @abstractmethod
-    def execute(self, cur_depth: int, max_depth: int, white_turn: bool, alpha: Optional[float], beta: Optional[float],
-                board: Board) -> Tuple[float, Optional[Move]]:
+    def __init__(self, evaluator: Evaluator):
+        self.evaluator = evaluator
+
+    def search(self, cur_depth: int, max_depth: int, white_turn: bool, alpha: float, beta: float, board: Board) \
+            -> Tuple[float, Optional[Move]]:
         """
-            A function allowing an adversarial search algorithm to calculate a move to play.
+            A function allowing the minimax algorithm to calculate a move to play.
 
             Arguments:
             :param cur_depth: The depth that the algorithm starts from.
@@ -32,18 +33,6 @@ class Algorithm(ABC):
             :param board: A board state that we are starting to search from.
             :return: A tuple, the first element being the evaluation estimate, the second being the move to play next.
         """
-        pass
-
-
-class Minimax(Algorithm):
-
-    TT = dict()
-
-    def __init__(self, eval_engine: EvaluationEngine):
-        super().__init__(eval_engine)
-
-    def execute(self, cur_depth: int, max_depth: int, white_turn: bool, alpha: float, beta: float, board: Board) \
-        -> Tuple[float, Optional[Move]]:
 
         if board.legal_moves.count() == 0:
             if board.is_check():  # checkmate
@@ -60,7 +49,7 @@ class Minimax(Algorithm):
                 return tt_eval, tt_bm
 
         if cur_depth == max_depth:
-            return self.eval_engine.evaluate_position(board), None
+            return self.evaluator.evaluate_position(board), None
 
         best_move = None
 
@@ -69,11 +58,11 @@ class Minimax(Algorithm):
             ordered_moves = Ordering.order(board.legal_moves, board, cur_depth)
 
             for lm in ordered_moves:
-                EvaluationEngine.update_piececounts_after(board, lm)
+                Evaluator.piececount_update(board, lm)
                 board.push(lm)
-                score, _ = self.execute(cur_depth + 1, max_depth, False, alpha, beta, board)
+                score, _ = self.search(cur_depth + 1, max_depth, False, alpha, beta, board)
                 board.pop()
-                EvaluationEngine.undo_piececounts_last()
+                Evaluator.pop_upd_stack()
                 if score > max_eval:
                     max_eval = score
                     best_move = lm
@@ -92,11 +81,11 @@ class Minimax(Algorithm):
             ordered_moves = Ordering.order(board.legal_moves, board, cur_depth)
 
             for lm in ordered_moves:
-                EvaluationEngine.update_piececounts_after(board, lm)
+                Evaluator.piececount_update(board, lm)
                 board.push(lm)
-                score, _ = self.execute(cur_depth + 1, max_depth, True, alpha, beta, board)
+                score, _ = self.search(cur_depth + 1, max_depth, True, alpha, beta, board)
                 board.pop()
-                EvaluationEngine.undo_piececounts_last()
+                Evaluator.pop_upd_stack()
                 if score < min_eval:
                     min_eval = score
                     best_move = lm
@@ -111,9 +100,19 @@ class Minimax(Algorithm):
             return min_eval, best_move
 
     @staticmethod
-    def cache_result(key, ev, move, dep):
+    def cache_result(key: str, ev: float, move: Move, dep: int) -> None:
+        """
+            Helper method that provides an interface to effectively cache a currently-evaluated position.
+
+            Arguments:
+            :param key: The key that will hash board state information.
+            :param ev: The score evaluated at this position.
+            :param move: The move to be played, that is in accordance with the score.
+            :param dep: The depth at which this position is evaluated.
+        """
+
         if key in Minimax.TT:
-            _, tt_depth, _= Minimax.TT[key]
+            _, tt_depth, _ = Minimax.TT[key]
             if dep <= tt_depth:
                 return
 
@@ -123,7 +122,7 @@ class Minimax(Algorithm):
 # Example Usage - todo: remove in future
 board_init = Board('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
 
-algo = Minimax(EvaluationEngine())
+algo = Minimax(Evaluator())
 
 while not board_init.is_checkmate() and not board_init.is_stalemate():
     print('% % % % % % % %')
@@ -136,7 +135,7 @@ while not board_init.is_checkmate() and not board_init.is_stalemate():
         m = input("Your move (in SAN): ").strip()
         print(f"You took {time.time() - start:.2f}s")
         try:
-            EvaluationEngine.update_piececounts_after(board_init, Move.from_uci(m))
+            Evaluator.piececount_update(board_init, Move.from_uci(m))
             board_init.push_san(m)
             break
         except ValueError:
@@ -151,10 +150,9 @@ while not board_init.is_checkmate() and not board_init.is_stalemate():
 
     print("Algorithm's turn...")
     start = time.time()
-    evaluation, m = algo.execute(0, 4, False, -np.inf, np.inf, board_init)
-    print(len(EvaluationEngine.transposition_table.keys()))
+    evaluation, m = algo.search(0, 4, False, -np.inf, np.inf, board_init)
     print(m)
-    EvaluationEngine.update_piececounts_after(board_init, m)
+    Evaluator.piececount_update(board_init, m)
     board_init.push(m)
     print(f"Opponent took {time.time() - start:.2f}s")
 
@@ -166,4 +164,4 @@ while not board_init.is_checkmate() and not board_init.is_stalemate():
         break
 
     print(f"Evaluation: {evaluation:.2f}")
-    EvaluationEngine.move_no += 1
+    Evaluator.move_no += 1

@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
-
 import numpy as np
+
+from abc import ABC, abstractmethod
 from chess import *
-from sklearn.preprocessing import MinMaxScaler
+from evaluation import Evaluator
+
 
 
 class Heuristic(ABC):
@@ -233,7 +234,7 @@ class Material(Heuristic):
         material_count = 0
 
         for piece_type in piece_values.keys():
-            material_count += EvaluationEngine.piece_presence[color][piece_type] * piece_values[piece_type]
+            material_count += Evaluator.piece_presence[color][piece_type] * piece_values[piece_type]
 
         return material_count
 
@@ -264,7 +265,7 @@ class EarlyQueenPenalty(Heuristic):
 
         queens = board.pieces(QUEEN, color)
 
-        if EvaluationEngine.move_no > 7:
+        if Evaluator.move_no > 7:
             return 0
 
         curr_q_sq = None
@@ -286,7 +287,7 @@ class EarlyKingPenalty(Heuristic):
 
         kings = board.pieces(KING, color)
 
-        if EvaluationEngine.move_no > 7:
+        if Evaluator.move_no > 7:
             return 0
 
         curr_k_sq = None
@@ -329,7 +330,7 @@ class PieceInactivity(Heuristic):
 class WeakAttackers(Heuristic):
 
     def estimate(self, board: Board, color: Color) -> float:
-
+    # todo za jana: test
         pieces = {
             PAWN: 1,
             KNIGHT: 3,
@@ -338,179 +339,33 @@ class WeakAttackers(Heuristic):
             QUEEN: 9,
         }
 
-        attacker_color = not color
-        legal_moves = list(board.legal_moves)
+        legal_moves = board.legal_moves
 
-        attacker_moves = [move for move in legal_moves if board.color_at(move.from_square) == attacker_color]
-        attacker_squares = [str(move)[-2:] for move in attacker_moves]
+        attacker_moves = [move for move in legal_moves]
+        attacker_squares = [move.to_square for move in attacker_moves]
         all_pieces_to_check = board.occupied_co[color]
 
         attacked_by = 0
 
-        for move, square in zip(attacker_moves, attacker_squares):
+        for move, sq in zip(attacker_moves, attacker_squares):
             board.push(move)
-            attacker_piece = board.piece_at(parse_square(square))
+            attacker_piece = board.piece_at(sq)
 
-            attacked_squares = int(board.attacks(parse_square(square)))
-            attacked_pieces = list(SquareSet(all_pieces_to_check & attacked_squares))
+            attacked_squares = board.attacks(sq)
+            attacked_pieces = SquareSet(all_pieces_to_check & attacked_squares)
 
-            attacker_piece_type = attacker_piece.piece_type
             for attacked_square in attacked_pieces:
                 attacked_piece_at_square = board.piece_at(attacked_square)
-                attacked_piece_type = attacked_piece_at_square.piece_type
 
-                if pieces.get(attacker_piece_type, 0) < pieces.get(attacked_piece_type, 0):
+                if (
+                    pieces.get(attacker_piece.piece_type, 0)
+                        <
+                    pieces.get(attacked_piece_at_square.piece_type, 0)
+                ):
                     attacked_by += 1
-                    # print(square, " CAN ATTACK ", attacked_square)
 
             board.pop()
+
+        board.turn = color
+
         return -attacked_by
-
-
-class EvaluationEngine:
-    # === Static Attributes === #
-    move_no = 1
-
-    piece_presence = {
-        BLACK: {
-            BISHOP: 2,
-            KNIGHT: 2,
-            QUEEN: 1,
-            ROOK: 1,
-            PAWN: 8,
-        },
-
-        WHITE: {
-            BISHOP: 2,
-            KNIGHT: 2,
-            QUEEN: 1,
-            ROOK: 1,
-            PAWN: 8,
-        }
-    }
-
-    operation_stack = []
-
-    weight_map_open = {
-        # todo: make weights better :D :p
-        Material: 0.8,
-        PassedPawns: 0.01,
-        KingSafety: 0.1,
-        EarlyKingPenalty: 0.6,
-        EarlyQueenPenalty: 0.5,
-        PieceMobility: 0.5,
-        CenterControl: 0.2,
-        BishopPair: 0.04,
-        OpenRook: 0.0,
-        BishopAttacks: 0.01,
-        DoubledPawns: 0.4,
-        IsolatedPawns: 0.4,
-        PieceInactivity: 0.4,
-        WeakAttackers: 0.6,
-        # Checkmate: 1
-    }
-
-    # todo: construct weight maps for middle and end games
-    # weight_map_mid = {
-    #     Material: 0.50,
-    #     PassedPawns: 0.15,
-    #     KingSafety: 0.20,
-    #     PieceMobility: 0.15,
-    #     CenterControl: 0.1,
-    #     BishopPair: 0.04,
-    #     OpenRook: 0.05,
-    #     BishopAttacks: 0.05,
-    #     DoubledPawns: 0.03,
-    #     IsolatedPawns: 0.05,
-    #     PieceInactivity: 0.1,
-    #     WeakAttackers: 0.2
-    # }
-    #
-    # weight_map_end = {
-    #     Material: 0.50,
-    #     PassedPawns: 0.3,
-    #     KingSafety: 0.20,
-    #     PieceMobility: 0.3,
-    #     CenterControl: 0.05,
-    #     BishopPair: 0.1,
-    #     OpenRook: 0.1,
-    #     BishopAttacks: 0.1,
-    #     DoubledPawns: 0.2,
-    #     IsolatedPawns: 0.2,
-    #     PieceInactivity: 0.1,
-    #     WeakAttackers: 0.2
-    # }
-
-    transposition_table = dict()
-
-    def __init__(self, *heuristics):
-        """
-        :param heuristics: Object members of the heuristic class, used to cumulatively calculate the final position
-        evaluation. Accepts n heuristic objects.
-        """
-        self.heuristics_use = []
-        self.weights = None
-
-        all_heuristics = Heuristic.__subclasses__()
-
-        if not heuristics:
-            self.heuristics_use = list(map(lambda h: h(), all_heuristics))
-        else:
-            self.heuristics_use = [*heuristics]
-
-        self.weightvec = self.__build_weight_vector()
-
-    def __build_weight_vector(self) -> np.array:
-        """
-            Helper function to build the weight vector. If n heuristic objects are passed, a weight vector of R^n is
-            constructed according to the weight importances of the field weight_map.
-            :return: A weight vector of R^n.
-        """
-        weight_vector = np.empty_like(self.heuristics_use)
-        for i, heuristic in enumerate(self.heuristics_use):
-            weight_vector[i] = EvaluationEngine.weight_map_open[type(heuristic)]
-
-        scaler = MinMaxScaler(feature_range=
-        (
-            np.min(weight_vector),
-            np.max(weight_vector)
-        )
-        )
-
-        scaled = scaler.fit_transform(weight_vector.reshape(-1, 1)).flatten()
-        scaled = scaled / np.sum(scaled)
-
-        return scaled
-
-    def evaluate_position(self, board: Board) -> float:
-        """
-            Evaluation of any board position/state. A positive result is an advantage for white, the converse is an
-            advantage for black. A win for white is given by np.inf, while -np.inf is a win for black.
-            A zero evalution is a draw.
-
-            Parameters:
-            :param board: An arbitrary board state.
-            :return: Inner product of the evaluation for white minus the inner product of the evaluation for black.
-        """
-
-        evaluation_vec_white = np.array([h.estimate(board, WHITE) for h in self.heuristics_use])
-        evaluation_vec_black = np.array([h.estimate(board, BLACK) for h in self.heuristics_use])
-
-        white_score = np.dot(self.weightvec, evaluation_vec_white)
-        black_score = np.dot(self.weightvec, evaluation_vec_black)
-
-        return white_score - black_score
-
-    @staticmethod
-    def update_piececounts_after(board: Board, move: Move) -> None:
-        piece = board.piece_at(move.to_square)
-
-        if piece is not None:
-            EvaluationEngine.piece_presence[piece.color][piece.piece_type] -= 1
-            EvaluationEngine.operation_stack.append((piece.color, piece.piece_type))
-
-    @staticmethod
-    def undo_piececounts_last():
-        if len(EvaluationEngine.operation_stack) != 0:
-            undo = EvaluationEngine.operation_stack.pop()
-            EvaluationEngine.piece_presence[undo[0]][undo[1]] += 1

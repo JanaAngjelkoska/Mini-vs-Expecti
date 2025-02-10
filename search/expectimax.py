@@ -1,11 +1,11 @@
 from chess import Board, Move
 from typing import Tuple, Optional
 import numpy as np
-from eval.heuristics import EvaluationEngine
+from eval.heuristics import Evaluator
 
 
 class Expectiminimax:
-    def __init__(self, eval_engine: EvaluationEngine):
+    def __init__(self, eval_engine: Evaluator):
         self.eval_engine = eval_engine
 
     def execute(self, board, depth: int, is_max_player: bool) -> Tuple[float, Optional[Move]]:
