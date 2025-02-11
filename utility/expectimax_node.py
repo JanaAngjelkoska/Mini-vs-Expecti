@@ -3,6 +3,8 @@ from typing import Set, Tuple, Optional
 
 
 class ExpectimaxNode(object):
+
+
     def __init__(self, board: Optional[Board] = Board(), parent_type: Optional[str] = "max"):
         """
         Constructor for an ExpectimaxNode.

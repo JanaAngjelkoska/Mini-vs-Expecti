@@ -1,4 +1,5 @@
 from chess import *
+import numpy as np
 
 class Ordering:
     """
@@ -12,7 +13,7 @@ class Ordering:
         BISHOP: 300,
         ROOK: 500,
         QUEEN: 900,
-        KING: 99999999,
+        KING: np.inf,
     }
 
     history_heuristic = {}
@@ -29,7 +30,7 @@ class Ordering:
         return Ordering.killer_moves.get(cur_depth, [])
 
     @staticmethod
-    def add_killer_move(move, cur_depth):
+    def push_killer(move, cur_depth):
         if cur_depth not in Ordering.killer_moves:
             Ordering.killer_moves[cur_depth] = []
         Ordering.killer_moves[cur_depth].append(move)
@@ -59,11 +60,14 @@ class Ordering:
         # Separate killer moves and non-killer moves
         killer_moves_set = set(killer_moves)
         killer_moves_list = [move for move in moves if move in killer_moves_set]
-        non_killer_moves_list = [move for move in moves if move not in killer_moves_set]
+        non_killer_moves_list = list(set(legal_moves).difference(killer_moves_set))
 
         non_killer_moves_list.sort(
-            key=lambda move: (Ordering.history_heuristic.get(move, 0), Ordering.mvv_lva(move, board)),
-            reverse=True  # desc
+            key=lambda move: (
+                Ordering.mvv_lva(move, board),
+                Ordering.history_heuristic.get(move, 0)
+            ),
+            reverse=True  # best -> worst
         )
 
         return killer_moves_list + non_killer_moves_list

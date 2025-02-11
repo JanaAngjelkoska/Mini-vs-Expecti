@@ -1,7 +1,7 @@
 from chess import Board, Move
 from typing import Tuple, Optional
 import numpy as np
-from eval.heuristics import Evaluator
+from eval.evaluation import Evaluator
 
 
 class Expectiminimax:

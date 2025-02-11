@@ -1,5 +1,7 @@
 from sklearn.preprocessing import MinMaxScaler
-from heuristics import *
+from eval.heuristics import (Heuristic, Material, PassedPawns, DoubledPawns, IsolatedPawns, BishopPair, BishopAttacks,
+    CenterControl, KingSafety, EarlyKingPenalty, EarlyQueenPenalty, WeakAttackers, OpenRook, PieceMobility, PieceInactivity)
+from chess import *
 
 import numpy as np
 
@@ -31,18 +33,18 @@ class Evaluator:
         # todo: make weights better :D :p
         Material: 0.8,
         PassedPawns: 0.01,
-        KingSafety: 0.1,
-        EarlyKingPenalty: 0.6,
+        KingSafety: 0.15,
+        EarlyKingPenalty: 1,
         EarlyQueenPenalty: 0.5,
         PieceMobility: 0.5,
         CenterControl: 0.2,
-        BishopPair: 0.04,
-        OpenRook: 0.0,
+        BishopPair: 0.05,
+        OpenRook: 0.01,
         BishopAttacks: 0.01,
         DoubledPawns: 0.4,
         IsolatedPawns: 0.4,
         PieceInactivity: 0.4,
-        WeakAttackers: 0.6,
+        WeakAttackers: 0.3,
         # Checkmate: 1
     }
 

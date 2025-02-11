@@ -1,4 +1,4 @@
-from eval.heuristics import *
+from eval.evaluation import Evaluator
 from utility.ordering import Ordering
 from chess import *
 from typing import Tuple, Optional
@@ -53,9 +53,10 @@ class Minimax:
 
         best_move = None
 
+        ordered_moves = Ordering.order(board.legal_moves, board, cur_depth)
+
         if white_turn:
             max_eval = -np.inf
-            ordered_moves = Ordering.order(board.legal_moves, board, cur_depth)
 
             for lm in ordered_moves:
                 Evaluator.piececount_update(board, lm)
@@ -68,7 +69,7 @@ class Minimax:
                     best_move = lm
                 alpha = max(alpha, score)
                 if beta <= alpha:
-                    Ordering.add_killer_move(lm, cur_depth)
+                    Ordering.push_killer(lm, cur_depth)
                     break
 
             Ordering.update_history_heuristic(best_move, cur_depth)
@@ -78,7 +79,6 @@ class Minimax:
 
         else:
             min_eval = np.inf
-            ordered_moves = Ordering.order(board.legal_moves, board, cur_depth)
 
             for lm in ordered_moves:
                 Evaluator.piececount_update(board, lm)
@@ -91,7 +91,7 @@ class Minimax:
                     best_move = lm
                 beta = min(beta, score)
                 if beta <= alpha:
-                    Ordering.add_killer_move(lm, cur_depth)
+                    Ordering.push_killer(lm, cur_depth)
                     break
 
             Ordering.update_history_heuristic(best_move, cur_depth)

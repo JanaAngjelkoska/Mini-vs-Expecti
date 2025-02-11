@@ -2,9 +2,6 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 from chess import *
-from evaluation import Evaluator
-
-
 
 class Heuristic(ABC):
     """
@@ -216,13 +213,16 @@ class OpenRook(Heuristic):
 
 class PieceMobility(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
-        copy = Board(board.fen())
-        copy.turn = color
+        cp = Board(board.fen())
+        cp.turn = color
         return len(list(board.legal_moves))
 
 
 class Material(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
+
+        from eval.evaluation import Evaluator
+
         piece_values = {
             PAWN: 1,
             KNIGHT: 3,
@@ -261,6 +261,8 @@ class EarlyQueenPenalty(Heuristic):
 
     def estimate(self, board: Board, color: Color) -> float:
 
+        from eval.evaluation import Evaluator
+
         queen_square = D1 if color == WHITE else D8
 
         queens = board.pieces(QUEEN, color)
@@ -282,6 +284,8 @@ class EarlyQueenPenalty(Heuristic):
 class EarlyKingPenalty(Heuristic):
 
     def estimate(self, board: Board, color: Color) -> float:
+
+        from eval.evaluation import Evaluator
 
         king_square = D1 if color == WHITE else D8
 
@@ -352,10 +356,13 @@ class WeakAttackers(Heuristic):
             attacker_piece = board.piece_at(sq)
 
             attacked_squares = board.attacks(sq)
-            attacked_pieces = SquareSet(all_pieces_to_check & attacked_squares)
+            attacked_pieces = SquareSet(SquareSet(all_pieces_to_check) & attacked_squares)
 
             for attacked_square in attacked_pieces:
                 attacked_piece_at_square = board.piece_at(attacked_square)
+
+                if attacked_piece_at_square is None:
+                    continue
 
                 if (
                     pieces.get(attacker_piece.piece_type, 0)
@@ -365,7 +372,5 @@ class WeakAttackers(Heuristic):
                     attacked_by += 1
 
             board.pop()
-
-        board.turn = color
 
         return -attacked_by
