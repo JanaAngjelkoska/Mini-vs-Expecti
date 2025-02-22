@@ -27,10 +27,9 @@ class Expectiminimax:
         if cur_depth == max_depth:
             return self.evaluator.evaluate_position(board), None
 
-        # Artificial chance node insertion (e.g., every 2nd depth)
+        # agent plays move from chance node
         if cur_depth % 2 == 0:
-            return self._chance_node(cur_depth, max_depth, white_turn, board)
-
+            return self.__chance_node(cur_depth, max_depth, white_turn, board)
 
         ordered_moves = Ordering.order(board.legal_moves, board, cur_depth)
 
@@ -81,7 +80,7 @@ class Expectiminimax:
 
             return min_eval, best_move
 
-    def _chance_node(self, cur_depth: int, max_depth: int, white_turn: bool, board: Board) -> Tuple[float, None]:
+    def __chance_node(self, cur_depth: int, max_depth: int, white_turn: bool, board: Board) -> Tuple[float, None]:
         """
             Simulates a chance node using a random probability distribution,
             minimizing expected value if it's Black's turn, maximizing if it's White's turn.
@@ -115,52 +114,3 @@ class Expectiminimax:
                     lm_likelihood_best = lm
 
         return EScore, lm_likelihood_best
-
-
-import time
-
-board_init = Board()
-
-algo = Expectiminimax(Evaluator())
-
-while not board_init.is_checkmate() and not board_init.is_stalemate():
-    print('% % % % % % % %')
-    print(board_init)
-    print('% % % % % % % %\n')
-
-    # User's turn
-    while True:
-        start = time.time()
-        m = input("Your move (in UCI): ").strip()
-        print(f"You took {time.time() - start:.2f}s")
-        try:
-            Evaluator.piececount_update(board_init, Move.from_uci(m))
-            board_init.push_san(m)
-            break
-        except ValueError:
-            print("Invalid move.")
-
-    if board_init.is_checkmate():
-        print("Checkmate for white.")
-        break
-    elif board_init.is_stalemate():
-        print("Stalemate.")
-        break
-
-    print("Algorithm's turn...")
-    start = time.time()
-    evaluation, m = algo.search(0, 3, False, board_init)
-    print(m)
-    Evaluator.piececount_update(board_init, m)
-    board_init.push(m)
-    print(f"Opponent took {time.time() - start:.2f}s")
-
-    if board_init.is_checkmate():
-        print("Checkmate for black.")
-        break
-    elif board_init.is_stalemate():
-        print("Draw.")
-        break
-
-    print(f"Evaluation: {evaluation:.2f}")
-    Evaluator.move_no += 1

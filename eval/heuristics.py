@@ -282,12 +282,14 @@ class EarlyQueenPenalty(Heuristic):
 
 
 class EarlyKingPenalty(Heuristic):
-
+    """
+        Heuristic for penalizing early king moves.
+    """
     def estimate(self, board: Board, color: Color) -> float:
 
         from eval.evaluation import Evaluator
 
-        king_square = D1 if color == WHITE else D8
+        king_square = E1 if color == WHITE else E8
 
         kings = board.pieces(KING, color)
 
@@ -306,33 +308,33 @@ class EarlyKingPenalty(Heuristic):
 
 
 class PieceInactivity(Heuristic):
-
+    """
+        Heuristic for penalizing piece inactivity.
+    """
     def estimate(self, board: Board, color: Color) -> float:
         initial_board = Board()
         count = 0
 
+        square_list = SQUARES.copy()
+
+        # king movement shouldn't affect this heuristic.
+        square_list.remove(E1)
+        square_list.remove(E8)
+
         for sq in SQUARES:
             current_piece = board.piece_at(sq)
+
             initial_piece = initial_board.piece_at(sq)
 
             if current_piece == initial_piece and current_piece is not None and current_piece.color == color:
                 count += 1
 
-        return count * -1
-
-
-# class Checkmate(Heuristic):
-#     def estimate(self, board: Board, color: Color) -> float:
-#         if board.is_checkmate():
-#             if board.turn == color:
-#                 return float('-inf')
-#             else:
-#                 return float('inf')
-#         return 0
-
+        return -count
 
 class WeakAttackers(Heuristic):
-
+    """
+        Heuristic penalizing tempo.
+    """
     def estimate(self, board: Board, color: Color) -> float:
     # todo za jana: test
         pieces = {

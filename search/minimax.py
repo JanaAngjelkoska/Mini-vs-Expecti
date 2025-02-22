@@ -45,7 +45,7 @@ class Minimax:
 
         if fen_hash in Minimax.TT:
             tt_eval, tt_depth, tt_bm = Minimax.TT[fen_hash]
-            if cur_depth <= tt_depth:
+            if cur_depth >= tt_depth:
                 return tt_eval, tt_bm
 
         if cur_depth == max_depth:
@@ -61,12 +61,19 @@ class Minimax:
             for lm in ordered_moves:
                 Evaluator.piececount_update(board, lm)
                 board.push(lm)
+
+                if board.is_checkmate():
+                    board.pop()
+                    return np.inf, lm
+
                 score, _ = self.search(cur_depth + 1, max_depth, False, alpha, beta, board)
                 board.pop()
                 Evaluator.pop_upd_stack()
+
                 if score > max_eval:
                     max_eval = score
                     best_move = lm
+
                 alpha = max(alpha, score)
                 if beta <= alpha:
                     Ordering.push_killer(lm, cur_depth)
@@ -83,6 +90,9 @@ class Minimax:
             for lm in ordered_moves:
                 Evaluator.piececount_update(board, lm)
                 board.push(lm)
+                # if board.is_checkmate():
+                #     board.pop()
+                #     return -np.inf, lm
                 score, _ = self.search(cur_depth + 1, max_depth, True, alpha, beta, board)
                 board.pop()
                 Evaluator.pop_upd_stack()
@@ -117,51 +127,3 @@ class Minimax:
                 return
 
         Minimax.TT[key] = (ev, dep, move)
-
-
-# Example Usage - todo: remove in future
-board_init = Board('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-
-algo = Minimax(Evaluator())
-
-while not board_init.is_checkmate() and not board_init.is_stalemate():
-    print('% % % % % % % %')
-    print(board_init)
-    print('% % % % % % % %\n')
-
-    # User's turn
-    while True:
-        start = time.time()
-        m = input("Your move (in SAN): ").strip()
-        print(f"You took {time.time() - start:.2f}s")
-        try:
-            Evaluator.piececount_update(board_init, Move.from_uci(m))
-            board_init.push_san(m)
-            break
-        except ValueError:
-            print("Invalid move.")
-
-    if board_init.is_checkmate():
-        print("Checkmate for white.")
-        break
-    elif board_init.is_stalemate():
-        print("Stalemate.")
-        break
-
-    print("Algorithm's turn...")
-    start = time.time()
-    evaluation, m = algo.search(0, 4, False, -np.inf, np.inf, board_init)
-    print(m)
-    Evaluator.piececount_update(board_init, m)
-    board_init.push(m)
-    print(f"Opponent took {time.time() - start:.2f}s")
-
-    if board_init.is_checkmate():
-        print("Checkmate for black.")
-        break
-    elif board_init.is_stalemate():
-        print("Draw.")
-        break
-
-    print(f"Evaluation: {evaluation:.2f}")
-    Evaluator.move_no += 1

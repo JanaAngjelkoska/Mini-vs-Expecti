@@ -34,8 +34,8 @@ class Evaluator:
         Material: 0.8,
         PassedPawns: 0.01,
         KingSafety: 0.15,
-        EarlyKingPenalty: 1,
-        EarlyQueenPenalty: 0.5,
+        EarlyKingPenalty: 100,
+        EarlyQueenPenalty: 50,
         PieceMobility: 0.5,
         CenterControl: 0.2,
         BishopPair: 0.05,
@@ -49,40 +49,41 @@ class Evaluator:
     }
 
     # todo: construct weight maps for middle and end games
-    # weight_map_mid = {
-    #     Material: 0.50,
-    #     PassedPawns: 0.15,
-    #     KingSafety: 0.20,
-    #     PieceMobility: 0.15,
-    #     CenterControl: 0.1,
-    #     BishopPair: 0.04,
-    #     OpenRook: 0.05,
-    #     BishopAttacks: 0.05,
-    #     DoubledPawns: 0.03,
-    #     IsolatedPawns: 0.05,
-    #     PieceInactivity: 0.1,
-    #     WeakAttackers: 0.2
-    # }
-    #
-    # weight_map_end = {
-    #     Material: 0.50,
-    #     PassedPawns: 0.3,
-    #     KingSafety: 0.20,
-    #     PieceMobility: 0.3,
-    #     CenterControl: 0.05,
-    #     BishopPair: 0.1,
-    #     OpenRook: 0.1,
-    #     BishopAttacks: 0.1,
-    #     DoubledPawns: 0.2,
-    #     IsolatedPawns: 0.2,
-    #     PieceInactivity: 0.1,
-    #     WeakAttackers: 0.2
-    # }
+    weight_map_mid = {
+        Material: 0.50,
+        PassedPawns: 0.15,
+        KingSafety: 0.20,
+        PieceMobility: 0.15,
+        CenterControl: 0.1,
+        BishopPair: 0.04,
+        OpenRook: 0.05,
+        BishopAttacks: 0.05,
+        DoubledPawns: 0.03,
+        IsolatedPawns: 0.05,
+        PieceInactivity: 0.1,
+        WeakAttackers: 0.2
+    }
+
+    weight_map_end = {
+        Material: 0.50,
+        PassedPawns: 0.3,
+        KingSafety: 0.20,
+        PieceMobility: 0.3,
+        CenterControl: 0.05,
+        BishopPair: 0.1,
+        OpenRook: 0.1,
+        BishopAttacks: 0.1,
+        DoubledPawns: 0.2,
+        IsolatedPawns: 0.2,
+        PieceInactivity: 0.1,
+        WeakAttackers: 0.2
+    }
 
     def __init__(self, *heuristics):
         """
-        :param heuristics: Object members of the heuristic class, used to cumulatively calculate the final position
-        evaluation. Accepts n heuristic objects. If unprovided, the default is all defined heuristics in the system.
+            Arguments:
+            :param heuristics: Object members of the heuristic class, used to cumulatively calculate the final position
+            evaluation. Accepts n heuristic objects. If unprovided, the default is all defined heuristics in the system.
         """
         self.heuristics_use = []
         self.weights = None
@@ -106,17 +107,17 @@ class Evaluator:
         for i, heuristic in enumerate(self.heuristics_use):
             weight_vector[i] = Evaluator.weight_map_open[type(heuristic)]
 
-        scaler = MinMaxScaler(feature_range=
-        (
-            np.min(weight_vector),
-            np.max(weight_vector)
-        )
-        )
+        # scaler = MinMaxScaler(feature_range=
+        # (
+        #     np.min(weight_vector),
+        #     np.max(weight_vector)
+        # )
+        # )
+        #
+        # scaled = scaler.fit_transform(weight_vector.reshape(-1, 1)).flatten()
+        # scaled = scaled / np.sum(scaled)
 
-        scaled = scaler.fit_transform(weight_vector.reshape(-1, 1)).flatten()
-        scaled = scaled / np.sum(scaled)
-
-        return scaled
+        return weight_vector
 
     def evaluate_position(self, board: Board) -> float:
         """
@@ -124,7 +125,7 @@ class Evaluator:
             advantage for black. A win for white is given by np.inf, while -np.inf is a win for black.
             A zero evalution is a draw.
 
-            Parameters:
+            Arguments:
             :param board: An arbitrary board state.
             :return: Inner product of the evaluation for white minus the inner product of the evaluation for black.
         """

@@ -3,7 +3,7 @@ import numpy as np
 
 class Ordering:
     """
-    A specific move ordering used to prune the search tree earlier (prioritize better moves).
+        A specific move ordering used to prune the search tree earlier (prioritize better moves).
     """
 
     PIECE_VALUES = {
