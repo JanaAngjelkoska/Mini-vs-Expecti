@@ -1,8 +1,11 @@
+import os
+
 import numpy as np
 
 import pandas as pd
 
 import chess.pgn as pgn
+from chess.pgn import GameNode
 
 from search.minimax import Minimax
 from search.expectiminimax import Expectiminimax
@@ -12,7 +15,7 @@ from eval.evaluation import Evaluator
 
 from chess import *
 
-from colorama import Fore, init
+from colorama import Fore
 
 def print_board_sf_style(b: Board):
     board_str = str(b)
@@ -34,6 +37,33 @@ def print_board_sf_style(b: Board):
                                                                     "|")
     print("  +-----------------+")
     print("    a b c d e f g h")
+
+def save_game(g: GameNode) -> None:
+    only_string = str(g.game()).split(']')[-1].strip()
+    result = only_string.split(' ')[-1]
+
+    if result == '*':
+        raise ValueError(f"Cannot save game with PGN: {only_string}\nGame is yet to finish")  # game in progress
+    elif result == '1-0':
+        result = '1'  # white victory
+    elif result == '0-1':
+        result = '0'  # black victory
+    else:
+        result = '2'  # draw
+
+    to_save = {
+        'pgn': only_string,
+        'result': result
+    }
+
+    if len(os.listdir('./games')) == 0:
+        df = pd.DataFrame(to_save)
+    else:
+        df = pd.read_csv('./games/played.csv')
+        df.append(to_save)
+
+    df.to_csv('./games/played.csv')
+
 
 if __name__ == '__main__':
 
@@ -83,5 +113,4 @@ if __name__ == '__main__':
         print_board_sf_style(board)
         break
 
-    only_string = str(game.game()).split(']')[-1].strip()
-    print(only_string)
+    save_game(game)
