@@ -194,23 +194,23 @@ class Evaluator:
         return np.dot(self.weightvec, evaluation_vec_white) \
             - np.dot(self.weightvec, evaluation_vec_black)
 
-    @staticmethod
-    def piececount_update(board: Board, move: Move) -> None:
-        """
-            Method that efficiently keeps track of material counts on the board.
-
-            Arguments:
-            :param board: An arbitrary board state.
-            :param move: The move performed, that might affect the material count on the board state.
-        """
-        piece = board.piece_at(move.to_square)
-
-        if piece is not None:
-            Evaluator.piece_presence[piece.color][piece.piece_type] -= 1
-            Evaluator.operation_stack.append((piece.color, piece.piece_type))
-
-    @staticmethod
-    def pop_upd_stack() -> None:
-        if len(Evaluator.operation_stack) != 0:
-            undo = Evaluator.operation_stack.pop()
-            Evaluator.piece_presence[undo[0]][undo[1]] += 1
+    # @staticmethod
+    # def piececount_update(board: Board, move: Move) -> None:
+    #     """
+    #         Method that efficiently keeps track of material counts on the board.
+    #
+    #         Arguments:
+    #         :param board: An arbitrary board state.
+    #         :param move: The move performed, that might affect the material count on the board state.
+    #     """
+    #     piece = board.piece_at(move.to_square)
+    #
+    #     if piece is not None:
+    #         Evaluator.piece_presence[piece.color][piece.piece_type] -= 1
+    #         Evaluator.operation_stack.append((piece.color, piece.piece_type))
+    #
+    # @staticmethod
+    # def pop_upd_stack() -> None:
+    #     if len(Evaluator.operation_stack) != 0:
+    #         undo = Evaluator.operation_stack.pop()
+    #         Evaluator.piece_presence[undo[0]][undo[1]] += 1

@@ -38,11 +38,9 @@ class Expectiminimax:
         if white_turn:
             max_eval = -np.inf
             for lm in ordered_moves:
-                Evaluator.piececount_update(board, lm)
                 board.push(lm)
                 score, _ = self.search(cur_depth + 1, max_depth, not white_turn, board, alpha, beta)
                 board.pop()
-                Evaluator.pop_upd_stack()
 
                 if score > max_eval:
                     max_eval = score
@@ -61,11 +59,9 @@ class Expectiminimax:
         else:
             min_eval = np.inf
             for lm in board.legal_moves:
-                Evaluator.piececount_update(board, lm)
                 board.push(lm)
                 score, _ = self.search(cur_depth + 1, max_depth, not white_turn, board, alpha, beta)
                 board.pop()
-                Evaluator.pop_upd_stack()
 
                 if score < min_eval:
                     min_eval = score
