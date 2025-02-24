@@ -93,14 +93,24 @@ class Evaluator:
 
         all_heuristics = Heuristic.__subclasses__()
 
+        self.period = "Opening"
+
         if not heuristics:
             self.heuristics_use = list(map(lambda h: h(), all_heuristics))
         else:
             self.heuristics_use = [*heuristics]
 
-        self.weightvec = self.__build_weight_vector()
+        self.weightvec = self.__build_weight_vector(self.weight_map_open)
 
-    def game_period(self, board):
+    @staticmethod
+    def __game_phase(board: Board) -> str:
+        """
+            Determine the phase of the game according the current board state.
+
+            Arguments:
+            :param board: The current board state.
+            :return: The phase of the game as a string, one of "Middlegame", "Opening" and "Endgame".
+        """
         pieces = {
             KNIGHT: 3,
             BISHOP: 3,
@@ -132,19 +142,18 @@ class Evaluator:
             else:
                 return "Endgame"
 
-    def __build_weight_vector(self) -> np.array:
+    def __build_weight_vector(self, with_map: Dict[PieceType, float]) -> np.array:
         """
             Helper function to build the weight vector. If n heuristic objects are passed, a weight vector of R^n is
             constructed according to the weight importances of the field weight_map.
             :return: A weight vector of R^n.
         """
 
-        # TODO
-        # period = self.game_period(board=board)
         weight_vector = np.empty_like(self.heuristics_use)
         for i, heuristic in enumerate(self.heuristics_use):
-            weight_vector[i] = Evaluator.weight_map_open[type(heuristic)]
+            weight_vector[i] = with_map[type(heuristic)]
 
+        # not needed?
         # scaler = MinMaxScaler(feature_range=
         # (
         #     np.min(weight_vector),
@@ -167,6 +176,17 @@ class Evaluator:
             :param board: An arbitrary board state.
             :return: Inner product of the evaluation for white minus the inner product of the evaluation for black.
         """
+
+        new_period = Evaluator.__game_phase(board)
+
+        if new_period != self.period:
+            self.period = new_period
+            if new_period == "Middlegame":
+                self.__build_weight_vector(self.weight_map_mid)
+            elif new_period == "Opening":
+                self.__build_weight_vector(self.weight_map_open)
+            else:
+                self.__build_weight_vector(self.weight_map_end)
 
         evaluation_vec_white = np.array([h.estimate(board, WHITE) for h in self.heuristics_use])
         evaluation_vec_black = np.array([h.estimate(board, BLACK) for h in self.heuristics_use])

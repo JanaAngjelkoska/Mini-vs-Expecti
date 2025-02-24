@@ -6,6 +6,7 @@ from typing import Tuple, Optional
 import numpy as np
 import time
 
+
 class Minimax:
     """
         The minimax adversarial search algorithm.
@@ -59,7 +60,6 @@ class Minimax:
             max_eval = -np.inf
 
             for lm in ordered_moves:
-                Evaluator.piececount_update(board, lm)
                 board.push(lm)
 
                 if board.is_checkmate():
@@ -68,8 +68,6 @@ class Minimax:
 
                 score, _ = self.search(cur_depth + 1, max_depth, False, alpha, beta, board)
                 board.pop()
-                Evaluator.pop_upd_stack()
-
                 if score > max_eval:
                     max_eval = score
                     best_move = lm
@@ -88,14 +86,14 @@ class Minimax:
             min_eval = np.inf
 
             for lm in ordered_moves:
-                Evaluator.piececount_update(board, lm)
                 board.push(lm)
-                # if board.is_checkmate():
-                #     board.pop()
-                #     return -np.inf, lm
+
+                if board.is_checkmate():
+                    board.pop()
+                    return -np.inf, lm
+
                 score, _ = self.search(cur_depth + 1, max_depth, True, alpha, beta, board)
                 board.pop()
-                Evaluator.pop_upd_stack()
                 if score < min_eval:
                     min_eval = score
                     best_move = lm

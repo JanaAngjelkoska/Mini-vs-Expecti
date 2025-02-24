@@ -232,7 +232,7 @@ class Material(Heuristic):
         total_piece_value = 0
 
         for piece, value in zip(pieces.keys(), pieces.values()):
-            total_piece_value += len(list(board.pieces(piece, WHITE))) * value
+            total_piece_value += len(list(board.pieces(piece, color))) * value
 
         return total_piece_value
 
