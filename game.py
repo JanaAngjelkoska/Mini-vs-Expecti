@@ -10,12 +10,12 @@ from chess.pgn import GameNode
 from search.minimax import Minimax
 from search.expectiminimax import Expectiminimax
 
-
 from eval.evaluation import Evaluator
 
 from chess import *
 
 from colorama import Fore
+
 
 def print_board_sf_style(b: Board):
     board_str = str(b)
@@ -37,6 +37,7 @@ def print_board_sf_style(b: Board):
                                                                     "|")
     print("  +-----------------+")
     print("    a b c d e f g h")
+
 
 def save_game(g: GameNode) -> None:
     only_string = str(g.game()).split(']')[-1].strip()
@@ -79,10 +80,12 @@ if __name__ == '__main__':
     mini_white = True
 
     if len(answer.intersection(set("black"))) == 5:
-        print("Game started with " + Fore.RED + "Minimax" + Fore.RESET + " as black, " + Fore.BLUE + "Expectiminimax" +  Fore.RESET + " as white")
+        print(
+            "Game started with " + Fore.RED + "Minimax" + Fore.RESET + " as black, " + Fore.BLUE + "Expectiminimax" + Fore.RESET + " as white")
         mini_white = False
     elif len(answer.intersection(set("white"))) == 5:
-        print("Game started with " + Fore.RED + "Minimax" + Fore.RESET + " as white, " + Fore.BLUE + "Expectiminimax" +  Fore.RESET + " as black")
+        print(
+            "Game started with " + Fore.RED + "Minimax" + Fore.RESET + " as white, " + Fore.BLUE + "Expectiminimax" + Fore.RESET + " as black")
     else:
         raise ValueError(f'Invalid input:\n{''.join(answer)}\nPlease enter either white or black')
 
@@ -91,7 +94,8 @@ if __name__ == '__main__':
     game = pgn.Game()
 
     while not board.is_game_over():
-        print(Fore.WHITE + "White (" + f'{ Fore.RED + 'Mini' if mini_white else  Fore.BLUE + 'expecti'}' + Fore.WHITE + ")" + Fore.RESET + "'s Turn")
+        print(
+            Fore.WHITE + "White (" + f'{Fore.RED + 'Mini' if mini_white else Fore.BLUE + 'expecti'}' + Fore.WHITE + ")" + Fore.RESET + "'s Turn")
 
         mini_eval, mini_move = mini.search(0, 4, mini_white, -np.inf, np.inf, board)
         board.push(mini_move)
@@ -103,7 +107,8 @@ if __name__ == '__main__':
         if board.is_game_over():
             break
 
-        print(Fore.BLACK + "Black (" + f'{ Fore.RED + 'mini' if not mini_white else  Fore.BLUE + 'Expecti'}' + Fore.BLACK + ")" + Fore.RESET + "'s Turn")
+        print(
+            Fore.BLACK + "Black (" + f'{Fore.RED + 'mini' if not mini_white else Fore.BLUE + 'Expecti'}' + Fore.BLACK + ")" + Fore.RESET + "'s Turn")
 
         expecti_eval, expecti_move = expecti.search(0, 3, not mini_white, board)
         board.push(expecti_move)
@@ -111,6 +116,7 @@ if __name__ == '__main__':
         game = game.add_variation(expecti_move)
 
         print_board_sf_style(board)
-        break
+        print(Evaluator.piece_presence)
+        # break
 
     save_game(game)

@@ -1,9 +1,10 @@
-from sklearn.preprocessing import MinMaxScaler
 from eval.heuristics import (Heuristic, Material, PassedPawns, DoubledPawns, IsolatedPawns, BishopPair, BishopAttacks,
-    CenterControl, KingSafety, EarlyKingPenalty, EarlyQueenPenalty, WeakAttackers, OpenRook, PieceMobility, PieceInactivity)
+                             CenterControl, KingSafety, EarlyKingPenalty, EarlyQueenPenalty, WeakAttackers, OpenRook,
+                             PieceMobility, PieceInactivity)
 from chess import *
 
 import numpy as np
+
 
 class Evaluator:
     # === Static Attributes === #
@@ -14,7 +15,7 @@ class Evaluator:
             BISHOP: 2,
             KNIGHT: 2,
             QUEEN: 1,
-            ROOK: 1,
+            ROOK: 2,
             PAWN: 8,
         },
 
@@ -22,7 +23,7 @@ class Evaluator:
             BISHOP: 2,
             KNIGHT: 2,
             QUEEN: 1,
-            ROOK: 1,
+            ROOK: 2,
             PAWN: 8,
         }
     }
@@ -31,51 +32,53 @@ class Evaluator:
 
     weight_map_open = {
         # todo: make weights better :D :p
-        Material: 0.8,
+        Material: 1,
         PassedPawns: 0.01,
         KingSafety: 0.15,
-        EarlyKingPenalty: 100,
-        EarlyQueenPenalty: 50,
-        PieceMobility: 0.5,
-        CenterControl: 0.2,
+        EarlyKingPenalty: 1,
+        EarlyQueenPenalty: 1,
+        PieceMobility: 0.8,
+        CenterControl: 0.6,
         BishopPair: 0.05,
         OpenRook: 0.01,
-        BishopAttacks: 0.01,
-        DoubledPawns: 0.4,
-        IsolatedPawns: 0.4,
-        PieceInactivity: 0.4,
-        WeakAttackers: 0.3,
+        BishopAttacks: 0.05,
+        DoubledPawns: 0.2,
+        IsolatedPawns: 0.2,
+        PieceInactivity: 0.5,
+        WeakAttackers: 0,
         # Checkmate: 1
     }
 
-    # todo: construct weight maps for middle and end games
     weight_map_mid = {
-        Material: 0.50,
-        PassedPawns: 0.15,
-        KingSafety: 0.20,
-        PieceMobility: 0.15,
-        CenterControl: 0.1,
-        BishopPair: 0.04,
-        OpenRook: 0.05,
-        BishopAttacks: 0.05,
-        DoubledPawns: 0.03,
-        IsolatedPawns: 0.05,
-        PieceInactivity: 0.1,
-        WeakAttackers: 0.2
-    }
-
-    weight_map_end = {
-        Material: 0.50,
-        PassedPawns: 0.3,
-        KingSafety: 0.20,
-        PieceMobility: 0.3,
-        CenterControl: 0.05,
+        Material: 1,
+        PassedPawns: 0.01,
+        KingSafety: 0.3,
+        EarlyKingPenalty: 1,
+        EarlyQueenPenalty: 1,
+        PieceMobility: 0.8,
+        CenterControl: 0.4,
         BishopPair: 0.1,
         OpenRook: 0.1,
-        BishopAttacks: 0.1,
+        BishopAttacks: 0.25,
+        DoubledPawns: 0.3,
+        IsolatedPawns: 0.3,
+        PieceInactivity: 0.4,
+        WeakAttackers: 0,
+    }
+
+    # todo: construct weight maps for middle and end games
+    weight_map_end = {
+        Material: 1,
+        PassedPawns: 0.5,
+        KingSafety: 0.1,
+        PieceMobility: 0.6,
+        CenterControl: 0.2,
+        BishopPair: 0.1,
+        OpenRook: 0.2,
+        BishopAttacks: 0.15,
         DoubledPawns: 0.2,
         IsolatedPawns: 0.2,
-        PieceInactivity: 0.1,
+        PieceInactivity: 0.4,
         WeakAttackers: 0.2
     }
 
@@ -97,12 +100,47 @@ class Evaluator:
 
         self.weightvec = self.__build_weight_vector()
 
+    def game_period(self, board):
+        pieces = {
+            KNIGHT: 3,
+            BISHOP: 3,
+            ROOK: 5,
+            QUEEN: 9,
+        }
+
+        white_pawns = board.pieces(PAWN, WHITE)
+        black_pawns = board.pieces(PAWN, BLACK)
+
+        pieces_values_white, pieces_values_black = 0, 0
+
+        for piece, value in zip(pieces.keys(), pieces.values()):
+            pieces_values_white += len(list(board.pieces(piece, WHITE))) * value
+
+        for piece, value in zip(pieces.keys(), pieces.values()):
+            pieces_values_black += len(list(board.pieces(piece, BLACK))) * value
+
+        if len(white_pawns) + len(black_pawns) >= 12:
+            if pieces_values_white >= 28 and pieces_values_black >= 28:
+                return "Opening"
+            elif pieces_values_white >= 23 and pieces_values_black >= 23:
+                return "Middlegame"
+            else:
+                return "Endgame"
+        else:
+            if pieces_values_white >= 23 and pieces_values_black >= 23:
+                return "Middlegame"
+            else:
+                return "Endgame"
+
     def __build_weight_vector(self) -> np.array:
         """
             Helper function to build the weight vector. If n heuristic objects are passed, a weight vector of R^n is
             constructed according to the weight importances of the field weight_map.
             :return: A weight vector of R^n.
         """
+
+        # TODO
+        # period = self.game_period(board=board)
         weight_vector = np.empty_like(self.heuristics_use)
         for i, heuristic in enumerate(self.heuristics_use):
             weight_vector[i] = Evaluator.weight_map_open[type(heuristic)]
@@ -134,8 +172,7 @@ class Evaluator:
         evaluation_vec_black = np.array([h.estimate(board, BLACK) for h in self.heuristics_use])
 
         return np.dot(self.weightvec, evaluation_vec_white) \
-             - np.dot(self.weightvec, evaluation_vec_black)
-
+            - np.dot(self.weightvec, evaluation_vec_black)
 
     @staticmethod
     def piececount_update(board: Board, move: Move) -> None:
@@ -154,13 +191,6 @@ class Evaluator:
 
     @staticmethod
     def pop_upd_stack() -> None:
-        """
-            Undoes the last material count update issued by Evaluator.piececount_update().
-
-            Arguments:
-            :param board: An arbitrary board state.
-            :param move: The move performed, that might affect the material count on the board state.
-        """
         if len(Evaluator.operation_stack) != 0:
             undo = Evaluator.operation_stack.pop()
             Evaluator.piece_presence[undo[0]][undo[1]] += 1

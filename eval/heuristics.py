@@ -3,6 +3,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from chess import *
 
+
 class Heuristic(ABC):
     """
         Functional interface to implement for a heuristic.
@@ -220,10 +221,7 @@ class PieceMobility(Heuristic):
 
 class Material(Heuristic):
     def estimate(self, board: Board, color: Color) -> float:
-
-        from eval.evaluation import Evaluator
-
-        piece_values = {
+        pieces = {
             PAWN: 1,
             KNIGHT: 3,
             BISHOP: 3,
@@ -231,12 +229,12 @@ class Material(Heuristic):
             QUEEN: 9,
         }
 
-        material_count = 0
+        total_piece_value = 0
 
-        for piece_type in piece_values.keys():
-            material_count += Evaluator.piece_presence[color][piece_type] * piece_values[piece_type]
+        for piece, value in zip(pieces.keys(), pieces.values()):
+            total_piece_value += len(list(board.pieces(piece, WHITE))) * value
 
-        return material_count
+        return total_piece_value
 
 
 class CenterControl(Heuristic):
@@ -247,14 +245,14 @@ class CenterControl(Heuristic):
 
         for sq in central_squares:
             attackers = board.attackers(color, sq)
-            center_grasp_score += 0.5 * len(attackers)
+            center_grasp_score += 0.1 * len(attackers)
 
         # higher reward if there are pawns on the central squares
         for pawn in pawns:
             if pawn in central_squares:
-                center_grasp_score += 1
+                center_grasp_score += 0.5
 
-        return center_grasp_score * 0.75
+        return center_grasp_score
 
 
 class EarlyQueenPenalty(Heuristic):
@@ -285,6 +283,7 @@ class EarlyKingPenalty(Heuristic):
     """
         Heuristic for penalizing early king moves.
     """
+
     def estimate(self, board: Board, color: Color) -> float:
 
         from eval.evaluation import Evaluator
@@ -311,6 +310,7 @@ class PieceInactivity(Heuristic):
     """
         Heuristic for penalizing piece inactivity.
     """
+
     def estimate(self, board: Board, color: Color) -> float:
         initial_board = Board()
         count = 0
@@ -331,12 +331,14 @@ class PieceInactivity(Heuristic):
 
         return -count
 
+
 class WeakAttackers(Heuristic):
     """
         Heuristic penalizing tempo.
     """
+
     def estimate(self, board: Board, color: Color) -> float:
-    # todo za jana: test
+        # todo za jana: test
         pieces = {
             PAWN: 1,
             KNIGHT: 3,
@@ -367,9 +369,9 @@ class WeakAttackers(Heuristic):
                     continue
 
                 if (
-                    pieces.get(attacker_piece.piece_type, 0)
+                        pieces.get(attacker_piece.piece_type, 0)
                         <
-                    pieces.get(attacked_piece_at_square.piece_type, 0)
+                        pieces.get(attacked_piece_at_square.piece_type, 0)
                 ):
                     attacked_by += 1
 
