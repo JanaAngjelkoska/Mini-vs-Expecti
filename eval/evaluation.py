@@ -44,9 +44,9 @@ class Evaluator:
         BishopAttacks: 0.05,
         DoubledPawns: 0.2,
         IsolatedPawns: 0.2,
-        PieceInactivity: 0.5,
+        PieceInactivity: 0.7,
         WeakAttackers: 0,
-        # Checkmate: 1
+        # ThreeFoldRepetition : 1
     }
 
     weight_map_mid = {
@@ -72,6 +72,8 @@ class Evaluator:
         PassedPawns: 0.5,
         KingSafety: 0.1,
         PieceMobility: 0.6,
+        EarlyKingPenalty: 0,
+        EarlyQueenPenalty: -1,
         CenterControl: 0.2,
         BishopPair: 0.1,
         OpenRook: 0.2,
@@ -79,7 +81,8 @@ class Evaluator:
         DoubledPawns: 0.2,
         IsolatedPawns: 0.2,
         PieceInactivity: 0.4,
-        WeakAttackers: 0.2
+        WeakAttackers: 0.2,
+        # ThreeFoldRepetition: 1
     }
 
     def __init__(self, *heuristics):
@@ -176,6 +179,9 @@ class Evaluator:
             :param board: An arbitrary board state.
             :return: Inner product of the evaluation for white minus the inner product of the evaluation for black.
         """
+
+        if board.is_stalemate() or board.can_claim_threefold_repetition():
+            return 0
 
         new_period = Evaluator.__game_phase(board)
 

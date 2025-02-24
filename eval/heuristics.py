@@ -300,7 +300,7 @@ class EarlyKingPenalty(Heuristic):
         for q in kings:
             curr_k_sq = q
 
-        if square_distance(curr_k_sq, king_square) == 1:
+        if square_distance(curr_k_sq, king_square) >= 1:
             return -10
 
         return 0

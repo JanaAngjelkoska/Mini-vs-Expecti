@@ -4,7 +4,6 @@ from chess import *
 from typing import Tuple, Optional
 
 import numpy as np
-import time
 
 
 class Minimax:

@@ -96,11 +96,17 @@ if __name__ == '__main__':
     while not board.is_game_over():
         print(
             Fore.WHITE + "White (" + f'{Fore.RED + 'Mini' if mini_white else Fore.BLUE + 'expecti'}' + Fore.WHITE + ")" + Fore.RESET + "'s Turn")
+        white_move = None
+        if mini_white:
+            mini_eval, mini_move = mini.search(0, 4, mini_white, -np.inf, np.inf, board)
+            white_move = mini_move
+        else:
+            expecti_eval, expecti_move = expecti.search(0, 3, not mini_white, board)
+            white_move = expecti_move
 
-        mini_eval, mini_move = mini.search(0, 4, mini_white, -np.inf, np.inf, board)
-        board.push(mini_move)
-
-        game = game.add_variation(mini_move)
+        board.push(white_move)
+        game = game.add_variation(white_move)
+        print("White moved: ", white_move)
 
         print_board_sf_style(board)
 
@@ -110,13 +116,20 @@ if __name__ == '__main__':
         print(
             Fore.BLACK + "Black (" + f'{Fore.RED + 'mini' if not mini_white else Fore.BLUE + 'Expecti'}' + Fore.BLACK + ")" + Fore.RESET + "'s Turn")
 
-        expecti_eval, expecti_move = expecti.search(0, 3, not mini_white, board)
-        board.push(expecti_move)
+        black_move = None
+        if mini_white:
+            expecti_eval, expecti_move = expecti.search(0, 3, not mini_white, board)
+            black_move = expecti_move
+        else:
+            mini_eval, mini_move = mini.search(0, 4, mini_white, -np.inf, np.inf, board)
+            black_move = mini_move
 
-        game = game.add_variation(expecti_move)
+        board.push(black_move)
+        print("Black moved: ", black_move)
+
+        game = game.add_variation(black_move)
 
         print_board_sf_style(board)
         print(Evaluator.piece_presence)
-        # break
 
     save_game(game)
