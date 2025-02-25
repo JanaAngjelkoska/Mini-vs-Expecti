@@ -41,6 +41,7 @@ class Expectiminimax:
                 board.push(lm)
 
                 if board.is_checkmate():
+                    board.pop()
                     return -np.inf if white_turn else np.inf, lm
 
                 score, _ = self.search(cur_depth + 1, max_depth, not white_turn, board, alpha, beta)
@@ -95,11 +96,9 @@ class Expectiminimax:
         lm_likelihood_best = None
 
         for i, lm in enumerate(board.legal_moves):
-            # Evaluator.piececount_update(board, lm)
             board.push(lm)
             score, _ = self.search(cur_depth + 1, max_depth, not white_turn, board)
             board.pop()
-            # Evaluator.pop_upd_stack()
 
             # Update EScore based on whether it's white or black's turn
             ev_score = score * random_vec[i]

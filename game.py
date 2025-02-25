@@ -1,4 +1,5 @@
 import os
+import sys
 
 import numpy as np
 
@@ -39,29 +40,24 @@ def print_board_sf_style(b: Board):
     print("    a b c d e f g h")
 
 
-def save_game(g: GameNode) -> None:
+def save_game(g: GameNode, result: str) -> None:
     only_string = str(g.game()).split(']')[-1].strip()
-    result = only_string.split(' ')[-1]
-
-    if result == '*':
-        raise ValueError(f"Cannot save game with PGN: {only_string}\nGame is yet to finish")  # game in progress
-    elif result == '1-0':
-        result = '1'  # white victory
-    elif result == '0-1':
-        result = '0'  # black victory
-    else:
-        result = '2'  # draw
 
     to_save = {
-        'pgn': only_string,
-        'result': result
+        'pgn': [only_string],
+        'result': [result]
     }
 
     if len(os.listdir('./games')) == 0:
         df = pd.DataFrame(to_save)
     else:
         df = pd.read_csv('./games/played.csv')
-        df.append(to_save)
+        if ((df['pgn'] == only_string) & (df['result'] == result)).any():
+            print(f"Variation:\n{only_string}\nalready exists in the database.", file=sys.stderr)
+            return
+        df = pd.concat([df, pd.DataFrame(to_save)], axis=0)
+
+    print(df)
 
     df.to_csv('./games/played.csv')
 
@@ -73,7 +69,7 @@ if __name__ == '__main__':
     mini = Minimax(evaluator)
     expecti = Expectiminimax(evaluator)
 
-    board = Board()
+    board = Board('kbK5/pp6/1P6/8/8/8/8/R7 w - - 0 1')
 
     answer = set(input("Who's " + Fore.RED + "Minimax" + Fore.RESET + "?").lower())
 
@@ -93,18 +89,27 @@ if __name__ == '__main__':
 
     game = pgn.Game()
 
+    result = None
+
     while not board.is_game_over():
         print(
             Fore.WHITE + "White (" + f'{Fore.RED + 'Mini' if mini_white else Fore.BLUE + 'expecti'}' + Fore.WHITE + ")" + Fore.RESET + "'s Turn")
         white_move = None
         if mini_white:
-            mini_eval, mini_move = mini.search(0, 4, mini_white, -np.inf, np.inf, board)
+            mini_eval, mini_move = mini.search(0, 4, WHITE, -np.inf, np.inf, board)
             white_move = mini_move
         else:
-            expecti_eval, expecti_move = expecti.search(0, 3, not mini_white, board)
+            expecti_eval, expecti_move = expecti.search(0, 3, WHITE, board)
             white_move = expecti_move
 
         board.push(white_move)
+
+        if board.is_game_over():
+            if board.is_checkmate():
+                result = '1-0'
+            else:
+                result = '1/2-1/2'
+
         game = game.add_variation(white_move)
         print("White moved: ", white_move)
 
@@ -118,13 +123,20 @@ if __name__ == '__main__':
 
         black_move = None
         if mini_white:
-            expecti_eval, expecti_move = expecti.search(0, 3, not mini_white, board)
+            expecti_eval, expecti_move = expecti.search(0, 3, BLACK, board)
             black_move = expecti_move
         else:
-            mini_eval, mini_move = mini.search(0, 4, mini_white, -np.inf, np.inf, board)
+            mini_eval, mini_move = mini.search(0, 4, BLACK, -np.inf, np.inf, board)
             black_move = mini_move
 
         board.push(black_move)
+
+        if board.is_game_over():
+            if board.is_checkmate():
+                result = '0-1'
+            else:
+                result = '1/2-1/2'
+
         print("Black moved: ", black_move)
 
         game = game.add_variation(black_move)
@@ -132,4 +144,4 @@ if __name__ == '__main__':
         print_board_sf_style(board)
         print(Evaluator.piece_presence)
 
-    save_game(game)
+    save_game(game, result)
