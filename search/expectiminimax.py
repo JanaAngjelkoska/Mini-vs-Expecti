@@ -37,6 +37,7 @@ class Expectiminimax:
         best_move = None
         if white_turn:
             max_eval = -np.inf
+
             for lm in ordered_moves:
                 board.push(lm)
 

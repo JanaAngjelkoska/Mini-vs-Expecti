@@ -55,11 +55,14 @@ def save_game(g: GameNode, result: str) -> None:
         if ((df['pgn'] == only_string) & (df['result'] == result)).any():
             print(f"Variation:\n{only_string}\nalready exists in the database.", file=sys.stderr)
             return
-        df = pd.concat([df, pd.DataFrame(to_save)], axis=0)
+        df_concat = pd.DataFrame(to_save)
+        print(df_concat)
+        df = pd.concat([df, df_concat], axis=0, ignore_index=True)
 
+    print('new df:')
     print(df)
 
-    df.to_csv('./games/played.csv')
+    df.to_csv('./games/played.csv', index=False)
 
 
 if __name__ == '__main__':
@@ -69,7 +72,7 @@ if __name__ == '__main__':
     mini = Minimax(evaluator)
     expecti = Expectiminimax(evaluator)
 
-    board = Board('kbK5/pp6/1P6/8/8/8/8/R7 w - - 0 1')
+    board = Board('2n1R1K1/4b2N/2Qn1R2/1p2kP2/1Pp5/7N/3P2p1/6B1 w - - 0 1')
 
     answer = set(input("Who's " + Fore.RED + "Minimax" + Fore.RESET + "?").lower())
 
@@ -88,6 +91,7 @@ if __name__ == '__main__':
     print_board_sf_style(board)
 
     game = pgn.Game()
+    game.setup(board)
 
     result = None
 
@@ -102,6 +106,9 @@ if __name__ == '__main__':
             expecti_eval, expecti_move = expecti.search(0, 3, WHITE, board)
             white_move = expecti_move
 
+        print("White moved: ", board.san(white_move))
+        game = game.add_variation(white_move)
+
         board.push(white_move)
 
         if board.is_game_over():
@@ -110,8 +117,6 @@ if __name__ == '__main__':
             else:
                 result = '1/2-1/2'
 
-        game = game.add_variation(white_move)
-        print("White moved: ", white_move)
 
         print_board_sf_style(board)
 
@@ -129,6 +134,9 @@ if __name__ == '__main__':
             mini_eval, mini_move = mini.search(0, 4, BLACK, -np.inf, np.inf, board)
             black_move = mini_move
 
+        print("Black moved: ", board.san(black_move))
+        game = game.add_variation(black_move)
+
         board.push(black_move)
 
         if board.is_game_over():
@@ -137,9 +145,6 @@ if __name__ == '__main__':
             else:
                 result = '1/2-1/2'
 
-        print("Black moved: ", black_move)
-
-        game = game.add_variation(black_move)
 
         print_board_sf_style(board)
         print(Evaluator.piece_presence)

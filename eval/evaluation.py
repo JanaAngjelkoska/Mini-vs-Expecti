@@ -180,9 +180,6 @@ class Evaluator:
             :return: Inner product of the evaluation for white minus the inner product of the evaluation for black.
         """
 
-        if board.is_stalemate() or board.can_claim_threefold_repetition():
-            return 0
-
         new_period = Evaluator.__game_phase(board)
 
         if new_period != self.period:

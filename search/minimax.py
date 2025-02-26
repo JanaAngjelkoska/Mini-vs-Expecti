@@ -37,7 +37,7 @@ class Minimax:
         if board.legal_moves.count() == 0:
             if board.is_check():  # checkmate
                 return -np.inf if white_turn else np.inf, None
-            else:  # stalemate
+            else: # draw
                 return 0, None
 
         fen_parts = board.fen().split(' ')
