@@ -67,6 +67,7 @@ class Minimax:
 
                 score, _ = self.search(cur_depth + 1, max_depth, False, alpha, beta, board)
                 board.pop()
+
                 if score > max_eval:
                     max_eval = score
                     best_move = lm
@@ -93,9 +94,11 @@ class Minimax:
 
                 score, _ = self.search(cur_depth + 1, max_depth, True, alpha, beta, board)
                 board.pop()
+
                 if score < min_eval:
                     min_eval = score
                     best_move = lm
+
                 beta = min(beta, score)
                 if beta <= alpha:
                     Ordering.push_killer(lm, cur_depth)

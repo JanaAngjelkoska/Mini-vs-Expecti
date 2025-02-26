@@ -21,7 +21,7 @@ class Expectiminimax:
         if board.legal_moves.count() == 0:
             if board.is_check():  # checkmate
                 return -np.inf if white_turn else np.inf, None
-            else:  # stalemate
+            else:  # draw
                 return 0, None
 
         if cur_depth == max_depth:
@@ -108,9 +108,14 @@ class Expectiminimax:
                 if ev_score > EScore:
                     EScore = score
                     lm_likelihood_best = lm
+                elif ev_score == EScore:
+                    lm_likelihood_best = lm
             else:
                 if ev_score < EScore:
                     EScore = score
                     lm_likelihood_best = lm
+                elif ev_score == EScore:
+                    lm_likelihood_best = lm
+
 
         return EScore, lm_likelihood_best
