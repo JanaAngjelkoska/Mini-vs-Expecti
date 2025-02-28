@@ -50,13 +50,14 @@ def save_game(g: GameNode, result: str) -> None:
         'result': [result]
     }
 
-    played_dir = Path('games')
+    namedir = 'games'
+    played_dir = Path(namedir)
     played_dir.mkdir(exist_ok=True)
 
     if not any(played_dir.iterdir()):
         df = pd.DataFrame(to_save)
     else:
-        df = pd.read_csv('./games/played.csv')
+        df = pd.read_csv(f'./{namedir}/played.csv')
         if ((df['pgn'] == only_string) & (df['result'] == result)).any():
             print(f"Variation:\n{only_string}\nalready exists in the database.", file=sys.stderr)
             return
@@ -67,7 +68,7 @@ def save_game(g: GameNode, result: str) -> None:
     print('new df:')
     print(df)
 
-    df.to_csv('./games/played.csv', index=False)
+    df.to_csv(f'./{namedir}/played.csv', index=False)
 
 
 if __name__ == '__main__':
@@ -77,7 +78,7 @@ if __name__ == '__main__':
     mini = Minimax(evaluator)
     expecti = Expectiminimax(evaluator)
 
-    board = Board()
+    board = Board(fen=STARTING_FEN)
 
     answer = set(input("Who's " + Fore.RED + "Minimax" + Fore.RESET + "?").lower())
 
