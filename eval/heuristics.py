@@ -178,12 +178,59 @@ class KingSafety(Heuristic):
 
         for sq in SQUARES:
             if square_distance(king_square, sq) <= 1:
-                attacked_squares.append(-1 * len(board.attackers(adversary_color, sq)))
+                attacked_squares.append(-0.5 * len(board.attackers(adversary_color, sq)))
 
         return sum(attacked_squares)
 
 
-class OpenRook(Heuristic):
+# TODO: closed position heuristic implemented with knight and bishop heuristic
+
+# class IsClosedPosition(Heuristic):
+#     def is_closed(self, board, color) -> float:
+#         white_pawns = list(board.pieces(PAWN, WHITE))
+#         black_pawns = list(board.pieces(PAWN, BLACK))
+#
+#         white_pawns = [square_name(pawn) for pawn in white_pawns]
+#         black_pawns = [square_name(pawn) for pawn in black_pawns]
+#
+#         central_white_pawns = sorted([sq for sq in white_pawns if sq[0] == 'c' or sq[0] == 'd' or sq[0] == 'e'])
+#         central_black_pawns = sorted([sq for sq in black_pawns if sq[0] == 'c' or sq[0] == 'd' or sq[0] == 'e'])
+#
+#         if len(central_white_pawns) <= 2 or len(central_black_pawns) <= 2:
+#             return 0.3
+#
+#         count_blocked = 0
+#         for white_pawn, black_pawn in zip(central_white_pawns, central_black_pawns):
+#             if int(white_pawn[1]) + 1 == int(black_pawn[1]):
+#                 count_blocked = count_blocked + 1
+#
+#         return count_blocked / 3 if count_blocked != 0 else 0.5
+#
+#     def estimate(self, board: Board, color: Color) -> float:
+#         for_knights = list(board.pieces(KNIGHT, WHITE))
+#         against_knights = list(board.pieces(KNIGHT, BLACK))
+#
+#         for_bishops = list(board.pieces(BISHOP, WHITE))
+#         against_bishops = list(board.pieces(BISHOP, BLACK))
+#
+#         closed_coeff = self.is_closed(board, color)
+#
+#         if closed_coeff == 0.5:
+#             return 0
+#
+#         if closed_coeff > 0.5:
+#             if len(for_knights) > len(against_knights):
+#                 return 0.1
+#             else:
+#                 return - 0.1
+#         else:
+#             if len(for_bishops) > len(against_bishops):
+#                 return 0.1
+#             else:
+#                 return - 0.1
+
+
+class OpenRookFile(Heuristic):
 
     def estimate(self, board: Board, color: Color) -> float:
         rooks = board.pieces(ROOK, color)
@@ -284,16 +331,18 @@ class EarlyKingPenalty(Heuristic):
         Heuristic for penalizing early king moves.
     """
 
-    def estimate(self, board: Board, color: Color) -> float:
+    # helper method
+    def has_castled(self, board: Board, color: Color, king_square) -> float:
+        if color == WHITE:
+            return king_square == G1 or king_square == C1
+        if color == BLACK:
+            return king_square == G8 or king_square == C8
 
-        from eval.evaluation import Evaluator
+    def estimate(self, board: Board, color: Color) -> float:
 
         king_square = E1 if color == WHITE else E8
 
         kings = board.pieces(KING, color)
-
-        if Evaluator.move_no > 7:
-            return 0
 
         curr_k_sq = None
 
@@ -301,9 +350,12 @@ class EarlyKingPenalty(Heuristic):
             curr_k_sq = q
 
         if square_distance(curr_k_sq, king_square) >= 1:
-            return -10
+            if self.has_castled(board, color, king_square):
+                return 0.1
+            else:
+                return -2
 
-        return 0
+        return -0.5
 
 
 class PieceInactivity(Heuristic):
@@ -368,11 +420,7 @@ class WeakAttackers(Heuristic):
                 if attacked_piece_at_square is None:
                     continue
 
-                if (
-                        pieces.get(attacker_piece.piece_type, 0)
-                        <
-                        pieces.get(attacked_piece_at_square.piece_type, 0)
-                ):
+                if pieces.get(attacker_piece.piece_type, 0) < pieces.get(attacked_piece_at_square.piece_type, 0):
                     attacked_by += 1
 
             board.pop()
