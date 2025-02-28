@@ -17,6 +17,8 @@ from chess import *
 
 from colorama import Fore
 
+from pathlib import Path
+
 
 def print_board_sf_style(b: Board):
     board_str = str(b)
@@ -48,7 +50,10 @@ def save_game(g: GameNode, result: str) -> None:
         'result': [result]
     }
 
-    if len(os.listdir('./games')) == 0:
+    played_dir = Path('games')
+    played_dir.mkdir(exist_ok=True)
+
+    if not any(played_dir.iterdir()):
         df = pd.DataFrame(to_save)
     else:
         df = pd.read_csv('./games/played.csv')
