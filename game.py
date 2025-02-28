@@ -72,7 +72,7 @@ if __name__ == '__main__':
     mini = Minimax(evaluator)
     expecti = Expectiminimax(evaluator)
 
-    board = Board('4k2r/p1p2p1p/4b2P/8/6p1/3n2P1/r2n4/1RK4R w k - 6 31')
+    board = Board()
 
     answer = set(input("Who's " + Fore.RED + "Minimax" + Fore.RESET + "?").lower())
 
@@ -105,9 +105,8 @@ if __name__ == '__main__':
         else:
             expecti_eval, expecti_move = expecti.search(0, 3, WHITE, board)
             white_move = expecti_move
-            print("Expecti: " + white_move.__str__() + expecti_eval.__str__())
 
-        print("White moved: ", white_move)
+        print("White moved: ", board.san(white_move))
         game = game.add_variation(white_move)
 
         board.push(white_move)
@@ -129,14 +128,12 @@ if __name__ == '__main__':
         black_move = None
         if mini_white:
             expecti_eval, expecti_move = expecti.search(0, 3, BLACK, board)
-            print(black_move)
             black_move = expecti_move
         else:
             mini_eval, mini_move = mini.search(0, 4, BLACK, -np.inf, np.inf, board)
             black_move = mini_move
-            print('at mini' + black_move.__str__() + mini_eval.__str__())
 
-        print("Black moved: ", black_move)
+        print("Black moved: ", board.san(black_move))
         game = game.add_variation(black_move)
 
         board.push(black_move)
@@ -148,6 +145,5 @@ if __name__ == '__main__':
                 result = '1/2-1/2'
 
         print_board_sf_style(board)
-        print(Evaluator.piece_presence)
 
     save_game(game, result)

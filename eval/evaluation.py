@@ -8,28 +8,11 @@ import numpy as np
 
 class Evaluator:
     # === Static Attributes === #
+
+    # move number tracker
     move_no = 1
 
-    piece_presence = {
-        BLACK: {
-            BISHOP: 2,
-            KNIGHT: 2,
-            QUEEN: 1,
-            ROOK: 2,
-            PAWN: 8,
-        },
-
-        WHITE: {
-            BISHOP: 2,
-            KNIGHT: 2,
-            QUEEN: 1,
-            ROOK: 2,
-            PAWN: 8,
-        }
-    }
-
-    operation_stack = []
-
+    # Weight map for opening
     weight_map_open = {
         # todo: make weights better :D :p
         Material: 1,
@@ -46,9 +29,9 @@ class Evaluator:
         IsolatedPawns: 0.2,
         PieceInactivity: 0.7,
         WeakAttackers: 0,
-        # ThreeFoldRepetition : 1
     }
 
+    # Weight map for middle game
     weight_map_mid = {
         Material: 1,
         PassedPawns: 0.01,
@@ -66,7 +49,7 @@ class Evaluator:
         WeakAttackers: 0,
     }
 
-    # todo: construct weight maps for middle and end games
+    # Weight map for endgame
     weight_map_end = {
         Material: 1,
         PassedPawns: 0.5,
@@ -82,7 +65,6 @@ class Evaluator:
         IsolatedPawns: 0.2,
         PieceInactivity: 0.4,
         WeakAttackers: 0.2,
-        # ThreeFoldRepetition: 1
     }
 
     def __init__(self, *heuristics):
@@ -156,7 +138,7 @@ class Evaluator:
         for i, heuristic in enumerate(self.heuristics_use):
             weight_vector[i] = with_map[type(heuristic)]
 
-        # not needed?
+        # not needed unless using part of the heuristics (testing)
         # scaler = MinMaxScaler(feature_range=
         # (
         #     np.min(weight_vector),
@@ -196,24 +178,3 @@ class Evaluator:
 
         return np.dot(self.weightvec, evaluation_vec_white) \
             - np.dot(self.weightvec, evaluation_vec_black)
-
-    # @staticmethod
-    # def piececount_update(board: Board, move: Move) -> None:
-    #     """
-    #         Method that efficiently keeps track of material counts on the board.
-    #
-    #         Arguments:
-    #         :param board: An arbitrary board state.
-    #         :param move: The move performed, that might affect the material count on the board state.
-    #     """
-    #     piece = board.piece_at(move.to_square)
-    #
-    #     if piece is not None:
-    #         Evaluator.piece_presence[piece.color][piece.piece_type] -= 1
-    #         Evaluator.operation_stack.append((piece.color, piece.piece_type))
-    #
-    # @staticmethod
-    # def pop_upd_stack() -> None:
-    #     if len(Evaluator.operation_stack) != 0:
-    #         undo = Evaluator.operation_stack.pop()
-    #         Evaluator.piece_presence[undo[0]][undo[1]] += 1
