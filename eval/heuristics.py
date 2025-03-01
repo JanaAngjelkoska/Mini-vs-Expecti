@@ -183,8 +183,6 @@ class KingSafety(Heuristic):
         return sum(attacked_squares)
 
 
-# TODO: closed position heuristic implemented with knight and bishop heuristic
-
 # class IsClosedPosition(Heuristic):
 #     def is_closed(self, board, color) -> float:
 #         white_pawns = list(board.pieces(PAWN, WHITE))
