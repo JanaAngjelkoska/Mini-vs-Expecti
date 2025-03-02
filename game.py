@@ -77,7 +77,7 @@ if __name__ == '__main__':
     mini = Minimax(evaluator)
     expecti = Expectiminimax(evaluator)
 
-    board = Board('r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0')
+    board = Board(fen=STARTING_FEN)
 
     answer = set(input("Who's " + Fore.RED + "Minimax" + Fore.RESET + "?").lower())
 
