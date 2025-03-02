@@ -104,7 +104,9 @@ if __name__ == '__main__':
     while not board.is_game_over():
         print(
             Fore.WHITE + "White (" + f'{Fore.RED + 'Mini' if mini_white else Fore.BLUE + 'expecti'}' + Fore.WHITE + ")" + Fore.RESET + "'s Turn")
+        
         white_move = None
+        
         if mini_white:
             mini_eval, mini_move = mini.search(0, 4, WHITE, -np.inf, np.inf, board)
             white_move = mini_move
@@ -120,18 +122,20 @@ if __name__ == '__main__':
         if board.is_game_over():
             if board.is_checkmate():
                 result = '1-0'
+                print('Checkmate, White is the winner.')
             else:
                 result = '1/2-1/2'
+                print('Draw.')
+                
+            break
 
         print_board_sf_style(board)
-
-        if board.is_game_over():
-            break
 
         print(
             Fore.BLACK + "Black (" + f'{Fore.RED + 'mini' if not mini_white else Fore.BLUE + 'Expecti'}' + Fore.BLACK + ")" + Fore.RESET + "'s Turn")
 
         black_move = None
+        
         if mini_white:
             expecti_eval, expecti_move = expecti.search(0, 3, BLACK, board)
             black_move = expecti_move
@@ -147,9 +151,15 @@ if __name__ == '__main__':
         if board.is_game_over():
             if board.is_checkmate():
                 result = '0-1'
+                print('Checkmate, Black is the winner.')
             else:
                 result = '1/2-1/2'
+                print('Draw')
+            
+            break
 
         print_board_sf_style(board)
 
+    
+    print_board_sf_style(board)
     save_game(game, result)
