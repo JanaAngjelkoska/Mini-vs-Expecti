@@ -1,5 +1,5 @@
 from eval.heuristics import (Heuristic, Material, PassedPawns, DoubledPawns, IsolatedPawns, BishopPair, BishopAttacks,
-                             CenterControl, KingSafety, EarlyKingPenalty, EarlyQueenPenalty, WeakAttackers, OpenRook,
+                             CenterControl, KingSafety, EarlyKingPenalty, EarlyQueenPenalty, WeakAttackers, OpenRookFile,
                              PieceMobility, PieceInactivity)
 from chess import *
 
@@ -23,7 +23,7 @@ class Evaluator:
         PieceMobility: 0.8,
         CenterControl: 0.6,
         BishopPair: 0.05,
-        OpenRook: 0.01,
+        OpenRookFile: 0.01,
         BishopAttacks: 0.05,
         DoubledPawns: 0.2,
         IsolatedPawns: 0.2,
@@ -41,7 +41,7 @@ class Evaluator:
         PieceMobility: 0.8,
         CenterControl: 0.4,
         BishopPair: 0.1,
-        OpenRook: 0.1,
+        OpenRookFile: 0.1,
         BishopAttacks: 0.25,
         DoubledPawns: 0.3,
         IsolatedPawns: 0.3,
@@ -59,7 +59,7 @@ class Evaluator:
         EarlyQueenPenalty: -1,
         CenterControl: 0.2,
         BishopPair: 0.1,
-        OpenRook: 0.2,
+        OpenRookFile: 0.2,
         BishopAttacks: 0.15,
         DoubledPawns: 0.2,
         IsolatedPawns: 0.2,
