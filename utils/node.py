@@ -2,7 +2,7 @@ from chess import Board, LegalMoveGenerator
 
 from typing import Set, Optional
 
-from utility.node_exceptions import NoChildrenCalculatedYetException
+from utils.node_exceptions import NoChildrenCalculatedYetException
 
 class PositionNode(object):
     """

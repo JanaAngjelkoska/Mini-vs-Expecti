@@ -1,5 +1,5 @@
 from eval.evaluation import Evaluator
-from utility.ordering import Ordering
+from utils.ordering import Ordering
 from chess import *
 from typing import Tuple, Optional
 

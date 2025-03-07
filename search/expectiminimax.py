@@ -1,6 +1,6 @@
 from eval.evaluation import Evaluator
 from chess import *
-from utility.ordering import Ordering
+from utils.ordering import Ordering
 import numpy as np
 
 
