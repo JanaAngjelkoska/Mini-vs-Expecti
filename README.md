@@ -1,6 +1,6 @@
 # Minimax vs. Expectiminimax in Chess
 
-![Minimax Vs  Expectiminimax](https://github.com/user-attachments/assets/2c78e2ea-7671-4456-9ae1-3aeb4d130c42)
+  ![Minimax Vs  Expectiminimax](https://github.com/user-attachments/assets/2c78e2ea-7671-4456-9ae1-3aeb4d130c42)
 
 ## Project Goal
 The goal of this project is to build 2 adversarial agents, heuristic functions that build an evaluation function for a small chess engine,
