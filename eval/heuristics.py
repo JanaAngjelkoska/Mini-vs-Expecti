@@ -6,7 +6,7 @@ from chess import *
 
 class Heuristic(ABC):
     """
-        Functional interface to implement for a heuristic.
+        Functional interface to implement for a heuristic. All heuristics are per player.
     """
 
     @abstractmethod
@@ -183,53 +183,10 @@ class KingSafety(Heuristic):
         return sum(attacked_squares)
 
 
-# class IsClosedPosition(Heuristic):
-#     def is_closed(self, board, color) -> float:
-#         white_pawns = list(board.pieces(PAWN, WHITE))
-#         black_pawns = list(board.pieces(PAWN, BLACK))
-#
-#         white_pawns = [square_name(pawn) for pawn in white_pawns]
-#         black_pawns = [square_name(pawn) for pawn in black_pawns]
-#
-#         central_white_pawns = sorted([sq for sq in white_pawns if sq[0] == 'c' or sq[0] == 'd' or sq[0] == 'e'])
-#         central_black_pawns = sorted([sq for sq in black_pawns if sq[0] == 'c' or sq[0] == 'd' or sq[0] == 'e'])
-#
-#         if len(central_white_pawns) <= 2 or len(central_black_pawns) <= 2:
-#             return 0.3
-#
-#         count_blocked = 0
-#         for white_pawn, black_pawn in zip(central_white_pawns, central_black_pawns):
-#             if int(white_pawn[1]) + 1 == int(black_pawn[1]):
-#                 count_blocked = count_blocked + 1
-#
-#         return count_blocked / 3 if count_blocked != 0 else 0.5
-#
-#     def estimate(self, board: Board, color: Color) -> float:
-#         for_knights = list(board.pieces(KNIGHT, WHITE))
-#         against_knights = list(board.pieces(KNIGHT, BLACK))
-#
-#         for_bishops = list(board.pieces(BISHOP, WHITE))
-#         against_bishops = list(board.pieces(BISHOP, BLACK))
-#
-#         closed_coeff = self.is_closed(board, color)
-#
-#         if closed_coeff == 0.5:
-#             return 0
-#
-#         if closed_coeff > 0.5:
-#             if len(for_knights) > len(against_knights):
-#                 return 0.1
-#             else:
-#                 return - 0.1
-#         else:
-#             if len(for_bishops) > len(against_bishops):
-#                 return 0.1
-#             else:
-#                 return - 0.1
-
-
 class OpenRookFile(Heuristic):
-
+    """
+        Heuristic giving rewards to open rook files.
+    """
     def estimate(self, board: Board, color: Color) -> float:
         rooks = board.pieces(ROOK, color)
         rooks_squares = [square_name(sq) for sq in rooks]
@@ -258,6 +215,9 @@ class OpenRookFile(Heuristic):
 
 
 class PieceMobility(Heuristic):
+    """
+        Heuristic giving rewards dynamic positions.
+    """
     def estimate(self, board: Board, color: Color) -> float:
         cp = Board(board.fen())
         cp.turn = color
@@ -265,6 +225,9 @@ class PieceMobility(Heuristic):
 
 
 class Material(Heuristic):
+    """
+        Heuristic that counts the material state on the board.
+    """
     def estimate(self, board: Board, color: Color) -> float:
         pieces = {
             PAWN: 1,
@@ -283,6 +246,9 @@ class Material(Heuristic):
 
 
 class CenterControl(Heuristic):
+    """
+        Heuristic that rewards good center control.
+    """
     def estimate(self, board: Board, color: Color) -> float:
         central_squares = {E4, E5, D4, D5}
         center_grasp_score = 0
@@ -301,7 +267,9 @@ class CenterControl(Heuristic):
 
 
 class EarlyQueenPenalty(Heuristic):
-
+    """
+        Heuristic punishing queen moves early in the game.
+    """
     def estimate(self, board: Board, color: Color) -> float:
 
         from eval.evaluation import Evaluator
@@ -326,7 +294,7 @@ class EarlyQueenPenalty(Heuristic):
 
 class EarlyKingPenalty(Heuristic):
     """
-        Heuristic for penalizing early king moves.
+        Heuristic for penalizing king moves early on in the game.
     """
 
     # helper method
@@ -388,7 +356,6 @@ class WeakAttackers(Heuristic):
     """
 
     def estimate(self, board: Board, color: Color) -> float:
-        # todo za jana: test
         pieces = {
             PAWN: 1,
             KNIGHT: 3,

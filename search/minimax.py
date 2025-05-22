@@ -44,9 +44,9 @@ class Minimax:
         fen_hash = ' '.join(fen_parts[:4])
 
         if fen_hash in Minimax.TT:
-            tt_eval, tt_depth, tt_bm = Minimax.TT[fen_hash]
+            tt_eval, tt_depth, tt_best_move = Minimax.TT[fen_hash]
             if cur_depth >= tt_depth:
-                return tt_eval, tt_bm
+                return tt_eval, tt_best_move
 
         if cur_depth == max_depth:
             return self.evaluator.evaluate_position(board), None
